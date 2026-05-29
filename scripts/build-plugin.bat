@@ -1,5 +1,5 @@
 @echo off
-REM Build and package the traffic-light plugin.
+REM Build and package the agent-critter plugin.
 REM
 REM Usage:
 REM   build-plugin.bat                              # build current platform + package
@@ -9,7 +9,7 @@ REM   build-plugin.bat linux   path\to\linux-binary # package linux with pre-bui
 
 setlocal enabledelayedexpansion
 
-echo === Building Traffic Light Plugin ===
+echo === Building Agent Critter Plugin ===
 
 set PLATFORM=%~1
 set BINARY_PATH=%~2
@@ -17,7 +17,7 @@ set BINARY_PATH=%~2
 REM If no args, detect platform and build
 if "%PLATFORM%"=="" (
     set PLATFORM=windows
-    set BINARY_PATH=target\release\traffic-light-daemon.exe
+    set BINARY_PATH=target\release\agent-critter.exe
     echo Building for current platform...
     cargo build --release
     if errorlevel 1 (
@@ -39,9 +39,9 @@ if not "%BINARY_PATH%"=="" (
 
 REM Platform specified but no binary path — look for current build
 if "%PLATFORM%"=="windows" (
-    set BINARY_PATH=target\release\traffic-light-daemon.exe
+    set BINARY_PATH=target\release\agent-critter.exe
 ) else (
-    set BINARY_PATH=target\release\traffic-light-daemon
+    set BINARY_PATH=target\release\agent-critter
 )
 if not exist "!BINARY_PATH!" (
     echo Error: Binary not found at !BINARY_PATH!. Build it first or provide a path.
@@ -49,7 +49,7 @@ if not exist "!BINARY_PATH!" (
 )
 
 :package
-set PACKAGE=dist\claude-traffic-light-plugin-%PLATFORM%.zip
+set PACKAGE=dist\agent-critter-plugin-%PLATFORM%.zip
 echo Platform: %PLATFORM%
 echo Packaging to %PACKAGE%...
 
@@ -57,7 +57,7 @@ REM Create dist directory
 if not exist dist mkdir dist
 
 REM Create temp directory
-set TMPDIR=%TEMP%\traffic-light-build-%RANDOM%
+set TMPDIR=%TEMP%\agent-critter-build-%RANDOM%
 mkdir "%TMPDIR%"
 
 REM Copy plugin files

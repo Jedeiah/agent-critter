@@ -184,7 +184,7 @@ impl AnimState {
 pub fn save_theme_choice(theme: ThemeKind) {
     let path = std::env::current_exe()
         .ok()
-        .and_then(|p| p.parent().map(|d| d.join(".traffic-light-theme")));
+        .and_then(|p| p.parent().map(|d| d.join(".agent-critter-theme")));
     if let Some(path) = path {
         std::fs::write(path, theme.dir_name()).ok();
     }
@@ -193,7 +193,7 @@ pub fn save_theme_choice(theme: ThemeKind) {
 pub fn load_theme_choice() -> ThemeKind {
     std::env::current_exe()
         .ok()
-        .and_then(|p| p.parent().map(|d| d.join(".traffic-light-theme")))
+        .and_then(|p| p.parent().map(|d| d.join(".agent-critter-theme")))
         .and_then(|p| std::fs::read_to_string(p).ok())
         .and_then(|s| {
             ThemeKind::ALL

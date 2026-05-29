@@ -1,6 +1,6 @@
-# Traffic Light — Claude Code 状态指示灯 (Rust 版)
+# Agent Critter — Claude Code 桌宠小精灵
 
-浮动窗口实时显示 Claude Code 运行状态。
+一只可爱的桌面小精灵，实时反映 Claude Code 的工作状态。
 
 ## 构建
 
@@ -17,7 +17,7 @@ cargo build --release
 
 2. 安装插件：
    ```
-   /plugin install claude-traffic-light@claude-traffic-light
+   /plugin install agent-critter@agent-critter
    ```
 
 3. 让插件生效：

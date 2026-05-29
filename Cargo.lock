@@ -435,7 +435,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "traffic-light-daemon"
+name = "agent-critter"
 version = "1.0.0"
 dependencies = [
  "fltk",

@@ -1,9 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
-  "name": "claude-traffic-light",
-  "displayName": "Traffic Light",
+  "name": "agent-critter",
+  "displayName": "Agent Critter",
   "version": "1.0.0",
-  "description": "浮动交通灯实时显示 Claude Code 运行状态 —— 绿灯空闲、绿灯闪烁处理中、黄灯等待确认、红灯错误",
+  "description": "一只可爱桌宠，实时展示 Claude Code 的工作状态 —— 乖巧等待、认真干活、歪头疑惑、踩坑犯错",
   "author": {
     "name": "chj",
     "email": "jedeiah95@gmail.com",
@@ -12,5 +12,5 @@
   "homepage": "https://github.com/Jedeiah/xxx",
   "repository": "https://github.com/Jedeiah/xxx",
   "license": "MIT",
-  "keywords": ["traffic-light", "status", "indicator", "ui", "productivity"]
+  "keywords": ["agent-critter", "desk-pet", "桌宠", "cute", "productivity"]
 }

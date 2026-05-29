@@ -32,28 +32,28 @@ fn state_info(s: LightState) -> StateInfo {
     match s {
         LightState::Idle => StateInfo {
             color: (0, 230, 118),
-            label: "空闲",
-            sub: "等待新任务",
+            label: "乖巧等待",
+            sub: "等你吩咐~",
         },
         LightState::Running => StateInfo {
             color: (0, 230, 118),
-            label: "运行中",
-            sub: "Claude 处理中",
+            label: "认真干活",
+            sub: "努力搬砖中...",
         },
         LightState::NeedConfirm => StateInfo {
             color: (255, 234, 0),
-            label: "等待确认",
-            sub: "需要您的操作",
+            label: "歪头疑惑",
+            sub: "需要你拿主意~",
         },
         LightState::ToolError => StateInfo {
             color: (255, 100, 50),
-            label: "工具错误",
-            sub: "可重试",
+            label: "踩到坑了",
+            sub: "好像出了点小问题",
         },
         LightState::ErrorFinal => StateInfo {
             color: (255, 23, 68),
-            label: "严重错误",
-            sub: "需人工处理",
+            label: "呜呜坏了",
+            sub: "快救救我！",
         },
     }
 }

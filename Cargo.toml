@@ -1,5 +1,5 @@
 [package]
-name = "traffic-light-daemon"
+name = "agent-critter"
 version = "1.0.0"
 edition = "2021"
 

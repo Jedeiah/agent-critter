@@ -34,8 +34,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: traffic-light-daemon-windows
-          path: target/release/traffic-light-daemon.exe
+          name: agent-critter-windows
+          path: target/release/agent-critter.exe
 
   build-macos:
     runs-on: macos-latest
@@ -60,8 +60,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: traffic-light-daemon-macos
-          path: target/release/traffic-light-daemon
+          name: agent-critter-macos
+          path: target/release/agent-critter
 
   release:
     needs: [build-windows, build-macos]
@@ -76,5 +76,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/traffic-light-daemon-windows/traffic-light-daemon.exe
-            artifacts/traffic-light-daemon-macos/traffic-light-daemon
+            artifacts/agent-critter-windows/agent-critter.exe
+            artifacts/agent-critter-macos/agent-critter

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and package the traffic-light plugin.
+# Build and package the agent-critter plugin.
 #
 # Usage:
 #   build-plugin.sh                                # build current platform + package
@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-echo "=== Building Traffic Light Plugin ==="
+echo "=== Building Agent Critter Plugin ==="
 
 PLATFORM="${1:-}"
 BINARY_PATH="${2:-}"
@@ -19,17 +19,17 @@ BINARY_PATH="${2:-}"
 if [[ -z "$PLATFORM" ]]; then
     if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
         PLATFORM="windows"
-        BINARY_PATH="target/release/traffic-light-daemon.exe"
+        BINARY_PATH="target/release/agent-critter.exe"
     elif [[ "$(uname -s)" == "Darwin" ]]; then
         if [[ "$(uname -m)" == "arm64" ]]; then
             PLATFORM="macos-arm64"
         else
             PLATFORM="macos"
         fi
-        BINARY_PATH="target/release/traffic-light-daemon"
+        BINARY_PATH="target/release/agent-critter"
     else
         PLATFORM="linux"
-        BINARY_PATH="target/release/traffic-light-daemon"
+        BINARY_PATH="target/release/agent-critter"
     fi
     echo "Building for current platform (${PLATFORM})..."
     cargo build --release
@@ -45,9 +45,9 @@ if [[ -n "$BINARY_PATH" ]]; then
 else
     # Platform specified but no binary path — check default location
     if [[ "$PLATFORM" == "windows" ]]; then
-        BINARY_PATH="target/release/traffic-light-daemon.exe"
+        BINARY_PATH="target/release/agent-critter.exe"
     else
-        BINARY_PATH="target/release/traffic-light-daemon"
+        BINARY_PATH="target/release/agent-critter"
     fi
     if [[ ! -f "$BINARY_PATH" ]]; then
         echo "Error: Binary not found at ${BINARY_PATH}. Build it first or provide a path." >&2
@@ -55,7 +55,7 @@ else
     fi
 fi
 
-PACKAGE="dist/claude-traffic-light-plugin-${PLATFORM}.zip"
+PACKAGE="dist/agent-critter-plugin-${PLATFORM}.zip"
 
 echo "Platform: ${PLATFORM}"
 echo "Packaging to ${PACKAGE}..."

@@ -1,9 +1,9 @@
 use std::env;
 use std::io::{self, Read};
 use std::time::Duration;
+use agent_critter::client::{send_event_str, send_raw_json};
 
-use traffic_light_daemon::client::{send_event_str, send_raw_json};
-use traffic_light_daemon::daemon::{run_daemon, start_detached_daemon, fixed_port};
+use agent_critter::daemon::{run_daemon, start_detached_daemon, fixed_port};
 
 fn read_stdin_and_send(port: u16) {
     let mut stdin_bytes = Vec::new();
