@@ -1,0 +1,28 @@
+# Rust build output
+target/
+
+# Build outputs
+dist/
+build/
+out/
+
+# Node.js
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
