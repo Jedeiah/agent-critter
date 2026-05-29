@@ -1,0 +1,15 @@
+{
+  "name": "claude-traffic-light",
+  "displayName": "Traffic Light",
+  "description": "实时显示 Claude Code 运行状态的红绿灯指示器",
+  "owner": {
+    "name": "chj"
+  },
+  "plugins": [
+    {
+      "name": "claude-traffic-light",
+      "source": "./",
+      "description": "浮动交通灯实时显示 Claude Code 运行状态"
+    }
+  ]
+}

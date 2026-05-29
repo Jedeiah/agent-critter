@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "claude-traffic-light",
+  "displayName": "Traffic Light",
+  "version": "1.0.0",
+  "description": "浮动交通灯实时显示 Claude Code 运行状态 —— 绿灯空闲、绿灯闪烁处理中、黄灯等待确认、红灯错误",
+  "author": {
+    "name": "chj",
+    "email": "jedeiah95@gmail.com",
+    "url": "https://github.com/Jedeiah/xxx"
+  },
+  "homepage": "https://github.com/Jedeiah/xxx",
+  "repository": "https://github.com/Jedeiah/xxx",
+  "license": "MIT",
+  "keywords": ["traffic-light", "status", "indicator", "ui", "productivity"]
+}
