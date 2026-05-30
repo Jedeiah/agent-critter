@@ -2,56 +2,14 @@ name: Build
 
 on:
   push:
-    branches: [main, master]
-    tags: ['v*']
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build release
-        run: cargo build --release
-
-      - name: Package plugin
-        shell: pwsh
-        run: |
-          mkdir dist
-          mkdir tmp
-          Copy-Item -Recurse .claude-plugin tmp\.claude-plugin
-          Copy-Item .claude-plugin\marketplace.json tmp\marketplace.json
-          Copy-Item -Recurse hooks tmp\hooks
-          Copy-Item -Recurse assets tmp\assets
-          Copy-Item PLUGIN.md tmp\
-          Copy-Item README.md tmp\
-          Copy-Item target\release\agent-critter.exe tmp\
-          Compress-Archive -Path tmp\* -DestinationPath dist\agent-critter-plugin-windows.zip -Force
-          Remove-Item -Recurse tmp
-
-      - name: Upload plugin package
-        uses: actions/upload-artifact@v4
-        with:
-          name: agent-critter-windows
-          path: dist/agent-critter-plugin-windows.zip
-
   build-macos:
     runs-on: macos-latest
     steps:
@@ -72,36 +30,93 @@ jobs:
       - name: Build release
         run: cargo build --release
 
-      - name: Package plugin
+      - name: Deploy binary to bin/
+        run: |
+          cp target/release/agent-critter bin/agent-critter
+          chmod +x bin/agent-critter
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -f bin/agent-critter
+          git diff --staged --quiet || (git commit -m "ci: update macos binary" && git push)
+
+      - name: Package plugin zip
         run: |
           mkdir -p dist tmp
           cp -r .claude-plugin tmp/
-          cp .claude-plugin/marketplace.json tmp/marketplace.json
+          cp .claude-plugin/marketplace.json tmp/
           cp -r hooks tmp/
           cp -r assets tmp/
           cp PLUGIN.md tmp/
           cp README.md tmp/
-          cp target/release/agent-critter tmp/
+          cp bin/agent-critter tmp/
           cd tmp && zip -r ../dist/agent-critter-plugin-macos.zip . && cd ..
 
-      - name: Upload plugin package
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: agent-critter-macos
           path: dist/agent-critter-plugin-macos.zip
 
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Deploy binary to bin/
+        shell: bash
+        run: |
+          cp target/release/agent-critter.exe bin/agent-critter.exe
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -f bin/agent-critter.exe
+          git diff --staged --quiet || (git commit -m "ci: update windows binary" && git push)
+
+      - name: Package plugin zip
+        shell: pwsh
+        run: |
+          mkdir dist
+          mkdir tmp
+          Copy-Item -Recurse .claude-plugin tmp\.claude-plugin
+          Copy-Item .claude-plugin\marketplace.json tmp\marketplace.json
+          Copy-Item -Recurse hooks tmp\hooks
+          Copy-Item -Recurse assets tmp\assets
+          Copy-Item PLUGIN.md tmp\
+          Copy-Item README.md tmp\
+          Copy-Item bin\agent-critter.exe tmp\agent-critter.exe
+          Compress-Archive -Path tmp\* -DestinationPath dist\agent-critter-plugin-windows.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-critter-windows
+          path: dist/agent-critter-plugin-windows.zip
+
   release:
-    needs: [build-windows, build-macos]
+    needs: [build-macos, build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/agent-critter-windows/agent-critter-plugin-windows.zip
             artifacts/agent-critter-macos/agent-critter-plugin-macos.zip
+            artifacts/agent-critter-windows/agent-critter-plugin-windows.zip

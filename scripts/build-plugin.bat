@@ -68,7 +68,8 @@ xcopy /E /I /Q "assets" "%TMPDIR%\assets\" >nul
 copy /Y "README.md" "%TMPDIR%\" >nul
 
 REM Copy binary (at root of zip, matching hooks.json path)
-copy /Y "%BINARY_PATH%" "%TMPDIR%\" >nul
+mkdir "%TMPDIR%\bin" >nul
+copy /Y "%BINARY_PATH%" "%TMPDIR%\bin\" >nul
 if errorlevel 1 (
     echo Error: Failed to copy binary!
     rmdir /S /Q "%TMPDIR%"

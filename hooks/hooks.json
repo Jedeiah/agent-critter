@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "async": true,
             "timeout": 10,
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "async": true,
             "timeout": 5
@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "async": true,
             "timeout": 5
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "async": true,
             "timeout": 5
@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "async": true,
             "timeout": 5
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "async": true,
             "timeout": 5
@@ -86,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "async": true,
             "timeout": 5
@@ -99,7 +99,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "timeout": 5
           }
@@ -111,7 +111,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "async": true,
             "timeout": 5
@@ -124,7 +124,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/agent-critter",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
             "args": ["--hook"],
             "timeout": 5
           }

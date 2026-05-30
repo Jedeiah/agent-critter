@@ -33,4 +33,8 @@ Thumbs.db
 # Runtime data
 data/
 
+# Platform binaries (committed by CI)
+*.exe
+!/bin/*
+
 

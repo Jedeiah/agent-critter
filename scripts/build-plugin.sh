@@ -48,7 +48,8 @@ cp -r assets "${TMPDIR}/"
 cp PLUGIN.md "${TMPDIR}/" 2>/dev/null || true
 cp README.md "${TMPDIR}/" 2>/dev/null || true
 
-cp "${BINARY_PATH}" "${TMPDIR}/"
+mkdir -p "${TMPDIR}/bin"
+cp "${BINARY_PATH}" "${TMPDIR}/bin/"
 
 cd "${TMPDIR}"
 zip -r "${OLDPWD}/${PACKAGE}" .
