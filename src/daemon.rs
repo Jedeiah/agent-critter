@@ -217,7 +217,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         let actions = ["jumping", "waving", "review"];
         let mut tick: u64 = 0;
         loop {
-            std::thread::sleep(std::time::Duration::from_secs(1));
+            std::thread::sleep(std::time::Duration::from_secs(2));
             tick += 1;
             let cur = state_poll.lock().unwrap().current_state();
             let _ = proxy_poll.send_event(UiCommand::SetState { state: cur, duration_ms: None });
@@ -231,7 +231,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 continue;
             }
             // Idle: only run probability every 10 ticks (~10s)
-            if tick % 10 != 0 { continue; }
+            if tick % 5 != 0 { continue; }
             let now = std::time::Instant::now();
             let since = *idle_since.get_or_insert(now);
             let elapsed = now.duration_since(since).as_secs();

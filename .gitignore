@@ -34,7 +34,6 @@ Thumbs.db
 data/
 
 # Platform binaries (CI commits via git add -f)
-bin/agent-critter
-bin/agent-critter.exe
+bin/**
 
 
