@@ -32,3 +32,7 @@ Thumbs.db
 
 # Runtime data
 data/
+
+# Binary (download from Releases)
+agent-critter
+agent-critter.exe
