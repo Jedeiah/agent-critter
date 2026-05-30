@@ -62,6 +62,7 @@ mkdir "%TMPDIR%"
 
 REM Copy plugin files
 xcopy /E /I /Q ".claude-plugin" "%TMPDIR%\.claude-plugin\" >nul
+copy /Y ".claude-plugin\marketplace.json" "%TMPDIR%\marketplace.json" >nul
 xcopy /E /I /Q "hooks" "%TMPDIR%\hooks\" >nul
 xcopy /E /I /Q "assets" "%TMPDIR%\assets\" >nul
 copy /Y "README.md" "%TMPDIR%\" >nul

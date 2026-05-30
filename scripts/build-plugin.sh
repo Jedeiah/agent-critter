@@ -42,6 +42,7 @@ TMPDIR=$(mktemp -d)
 trap "rm -rf ${TMPDIR}" EXIT
 
 cp -r .claude-plugin "${TMPDIR}/"
+cp .claude-plugin/marketplace.json "${TMPDIR}/"
 cp -r hooks "${TMPDIR}/"
 cp -r assets "${TMPDIR}/"
 cp PLUGIN.md "${TMPDIR}/" 2>/dev/null || true
