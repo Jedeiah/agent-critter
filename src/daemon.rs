@@ -335,7 +335,8 @@ pub fn start_detached_daemon(_port: u16) -> bool {
 pub fn fixed_port() -> u16 { FIXED_PORT }
 
 fn data_dir() -> std::path::PathBuf {
-    std::env::current_dir().unwrap_or_default().join("data")
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+    std::path::PathBuf::from(home).join(".agent-critter").join("data")
 }
 
 fn save_scale(s: f32) {
