@@ -1,15 +1,17 @@
 {
   "name": "agent-critter",
-  "displayName": "Agent Critter",
-  "description": "让 Claude Code 变成一只陪你 coding 的桌面小宠物",
   "owner": {
     "name": "chj"
   },
   "plugins": [
     {
       "name": "agent-critter",
-      "source": "./",
-      "description": "一只可爱的桌面小精灵，实时反映 Claude Code 的工作状态"
+      "description": "一只桌宠小精灵，实时展示 Claude Code 工作状态。支持 Petdex 社区 2700+ 精灵。",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/Jedeiah/agent-critter.git"
+      },
+      "homepage": "https://github.com/Jedeiah/agent-critter"
     }
   ]
 }
