@@ -50,6 +50,7 @@ jobs:
           cp -r assets tmp/
           cp PLUGIN.md tmp/
           cp README.md tmp/
+          mkdir -p tmp/bin
           cp bin/agent-critter tmp/bin/
           cd tmp && zip -r ../dist/agent-critter-plugin-macos.zip . && cd ..
 
