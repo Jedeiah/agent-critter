@@ -45,8 +45,7 @@ fn list_pets() -> Vec<PetInfo> {
 #[derive(Debug, Clone)]
 pub enum UiCommand {
     SetState { state: LightState, duration_ms: Option<u64> },
-    SwitchRunning, // toggle running direction
-    Move { dx: i32, dy: i32 },
+    SwitchRunning,
     SwitchPet { slug: String },
     IdleAction { action_state: &'static str, bubble: &'static str },
     Quit,
@@ -96,6 +95,10 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     { use tao::platform::macos::EventLoopExtMacOS;
       event_loop.set_activation_policy(tao::platform::macos::ActivationPolicy::Accessory); }
 
+    // Wrap window for sharing with IPC handler (Petdex-style direct drag)
+    let win_arc = Arc::new(Mutex::new(window));
+    let window = win_arc.clone(); // keep name `window` for later
+
     // Load pet
     let (sheet, slug) = crate::webview::find_first_pet()
         .unwrap_or_else(|| (include_bytes!("../assets/default_spritesheet.webp").to_vec(), "default".into()));
@@ -103,8 +106,9 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     let pets_json = serde_json::to_string(&pets).unwrap_or_default();
     let html = crate::webview::build_page(&sheet, &slug, &pets_json);
 
-    // WebView
+    // WebView: IPC handler moves window directly, no EventLoop roundtrip
     let proxy_ipc = proxy.clone();
+    let drag_win = win_arc.clone();
     let webview = WebViewBuilder::new()
         .with_transparent(true).with_html(&html)
         .with_ipc_handler(move |msg| {
@@ -113,24 +117,48 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 if let Some(slug) = v.get("theme").and_then(|t| t.as_str()) {
                     let _ = proxy_ipc.send_event(UiCommand::SwitchPet { slug: slug.into() });
                 }
+                if let Some(url) = v.get("url").and_then(|u| u.as_str()) {
+                    let _ = std::process::Command::new("open").arg(url).spawn();
+                }
+                if v.get("act").and_then(|a| a.as_str()) == Some("1") {
+                    #[cfg(target_os = "macos")]
+                    if let Ok(w) = drag_win.lock() {
+                        use tao::platform::macos::WindowExtMacOS;
+                        let ns = w.ns_window() as *mut objc::runtime::Object;
+                        if !ns.is_null() {
+                            unsafe {
+                                let app: *mut objc::runtime::Object = objc::msg_send![objc::class!(NSApplication), sharedApplication];
+                                let _: () = objc::msg_send![app, activateIgnoringOtherApps: true];
+                                let _: () = objc::msg_send![ns, makeKeyAndOrderFront: std::ptr::null::<objc::runtime::Object>()];
+                            }
+                        }
+                    }
+                }
                 if v.get("type").and_then(|t| t.as_str()) == Some("move") {
                     let dx = v.get("dx").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
                     let dy = v.get("dy").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
-                    let _ = proxy_ipc.send_event(UiCommand::Move { dx, dy });
+                    if let Ok(w) = drag_win.lock() {
+                        let pos = w.outer_position().unwrap_or_default();
+                        let new_x = pos.x + dx; let new_y = pos.y + dy;
+                        w.set_outer_position(tao::dpi::PhysicalPosition::new(new_x, new_y));
+                        save_position(new_x, new_y);
+                    }
                 }
             }
         })
-        .build(&window).expect("webview");
-    window.set_visible(true);
+        .build(&*window.lock().unwrap()).expect("webview");
+    { let w = window.lock().unwrap(); w.set_visible(true); }
 
     // macOS: WKWebView drawsBackground = NO (must be AFTER webview build)
     #[cfg(target_os = "macos")]
     { use tao::platform::macos::WindowExtMacOS;
-      let ns: *mut std::ffi::c_void = window.ns_window();
+      let w = window.lock().unwrap();
+      let ns: *mut std::ffi::c_void = w.ns_window();
       if !ns.is_null() { unsafe {
         let win: &objc::runtime::Object = &*(ns as *const objc::runtime::Object);
         let _: () = objc::msg_send![win, setOpaque: false];
         let _: () = objc::msg_send![win, setAcceptsMouseMovedEvents: true];
+        let _: () = objc::msg_send![win, setMovableByWindowBackground: true];
         let c: *mut objc::runtime::Object = objc::msg_send![objc::class!(NSColor), clearColor];
         let _: () = objc::msg_send![win, setBackgroundColor: c];
         let cv: *mut objc::runtime::Object = objc::msg_send![win, contentView];
@@ -219,7 +247,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     let state_exit = Arc::clone(&state);
     let mut webview = Some(webview);
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_millis(20));
+        *control_flow = ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_millis(5));
 
         let (should_exit, count) = {
             let s = state_exit.lock().unwrap();
@@ -248,13 +276,6 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                             let _ = wv.evaluate_script("setBubble('',0,false)");
                         }
                     }
-                }
-                UiCommand::Move { dx, dy } => {
-                    let pos = window.outer_position().unwrap_or_default();
-                    let new_x = pos.x + dx;
-                    let new_y = pos.y + dy;
-                    window.set_outer_position(tao::dpi::PhysicalPosition::new(new_x, new_y));
-                    save_position(new_x, new_y);
                 }
                 UiCommand::SwitchRunning => {
                     if let Some(ref wv) = webview {

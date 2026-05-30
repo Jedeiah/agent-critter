@@ -16,7 +16,8 @@ pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str) -> String {
 <meta charset="utf-8">
 <style>
   html, body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; width: 100%; height: 100%; font-family: -apple-system, system-ui, sans-serif; }}
-  body {{ -webkit-user-select: none; user-select: none; pointer-events: none; }}
+  body {{ -webkit-user-select: none; user-select: none; }}
+  * {{ cursor: default !important; }}
   .stage {{ position: fixed; left: 8px; }}
   .pet {{
     aspect-ratio: 192 / 208;
@@ -57,10 +58,13 @@ function pos(c, r) {{ return c/(COLS-1)*100+'% '+r/(ROWS-1)*100+'%'; }}
 var pet = document.getElementById('pet');
 var stageEl = pet.parentElement;
 if (stageEl) {{
-  stageEl.style.top = '34px';
-  stageEl.style.left = '8px';
+  stageEl.style.top = '50px';
+  stageEl.style.left = '34px';
   stageEl.style.position = 'fixed';
 }}
+// Debug: show window bounds
+document.documentElement.style.outline = '1px solid rgba(255,0,0,0.5)';
+document.documentElement.style.outlineOffset = '-1px';
 var currentState = 'idle', stateTimer = null;
 function play(state) {{
   if (state === currentState) return;
@@ -120,52 +124,56 @@ function positionBubble() {{
 window.setBubble = function(text, durationMs, persist) {{
   var el = ensureBubble();
   bubbleTextEl.textContent = text || '';
+  clearTimeout(window.__bubbleTimer);
   if (text) {{
     el.style.opacity = '1';
     positionBubble();
-    if (!persist && durationMs) setTimeout(function() {{ el.style.opacity = '0'; }}, durationMs);
+    if (!persist && durationMs) window.__bubbleTimer = setTimeout(function() {{ el.style.opacity = '0'; }}, durationMs);
   }} else {{
     el.style.opacity = '0';
   }}
 }};
 
-// --- Drag (same approach as Petdex: JS mousedown/move/up → IPC) ---
-var dragging = false, wasDrag = false, startX = 0, startY = 0;
-pet.addEventListener('mousedown', function(e) {{
+// --- Drag: mousedown anywhere on window → move window ---
+var dragging = false, wasDrag = false, startX = 0, startY = 0, lastMove = 0;
+document.body.addEventListener('mousedown', function(e) {{
   if (e.button !== 0) return;
+  if (e.target === pet || pet.contains(e.target)) return; // skip drag on pet
   dragging = true; wasDrag = false;
-  startX = e.screenX; startY = e.screenY;
-  pet.classList.add('dragging');
+  startX = e.screenX; startY = e.screenY; lastMove = 0;
 }});
-document.addEventListener('mousemove', function(e) {{
+window.addEventListener('mousemove', function(e) {{
   if (!dragging) return;
+  var now = Date.now();
+  if (now - lastMove < 16) return; // throttle to ~60fps
+  lastMove = now;
   var dx = e.screenX - startX, dy = e.screenY - startY;
   if (Math.abs(dx) > 2 || Math.abs(dy) > 2) wasDrag = true;
   window.ipc.postMessage(JSON.stringify({{type:'move',dx:dx,dy:dy}}));
   startX = e.screenX; startY = e.screenY;
 }});
-document.addEventListener('mouseup', function() {{
+window.addEventListener('mouseup', function() {{
   if (!dragging) return;
   dragging = false;
-  pet.classList.remove('dragging');
 }});
 
 // --- Right-click pet menu ---
 pet.addEventListener('contextmenu', function(e) {{
   e.preventDefault();
+  window.ipc.postMessage(JSON.stringify({{act:'1'}}));
   // Activate the window so timers & blur work
   window.ipc.postMessage(JSON.stringify({{type:'focus'}}));
   var menu = document.getElementById('pet-menu');
   if (!menu) {{
     menu = document.createElement('div');
     menu.id = 'pet-menu';
-    menu.style.cssText = 'position:fixed;background:rgba(20,20,22,0.96);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px;z-index:999;min-width:100px;max-height:160px;overflow-y:auto;pointer-events:auto;display:none';
+    menu.style.cssText = 'position:fixed;background:rgba(20,20,22,0.96);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px;z-index:999;min-width:115px;max-height:160px;overflow-y:auto;pointer-events:auto;display:none';
     document.body.appendChild(menu);
     // Dismiss on outside click or window blur
     document.addEventListener('click', function(ev) {{ if (menu && menu.style.display === 'block' && !menu.contains(ev.target) && ev.target !== pet) {{ menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }} }});
     window.addEventListener('blur', function() {{ if (menu) {{ menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }} }});
   }}
-  menu.innerHTML = '';
+  menu.innerHTML = '<div style=\'padding:2px 8px 6px;color:rgba(255,255,255,0.4);font-size:9px;text-align:center\'>🐾 切换宠物</div>';
   var pets = window.__PETS || [];
   if (pets.length === 0) pets = [{{slug:'default',name:'Default'}}];
   pets.forEach(function(p) {{
@@ -186,8 +194,19 @@ pet.addEventListener('contextmenu', function(e) {{
   var quit = document.createElement('div');
   quit.textContent = '× 退出';
   quit.style.cssText = 'padding:4px 8px;border-radius:4px;color:#f88;cursor:pointer;font-size:11px';
-  quit.addEventListener('click', function() {{ window.ipc.postMessage('quit'); menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }});
+  quit.addEventListener('click', function() {{ window.ipc.postMessage('quit'); menu.style.display = 'none'; }});
   menu.appendChild(quit);
+  // GitHub link
+  var hr2 = document.createElement('hr');
+  hr2.style.cssText = 'margin:4px 0;border:none;border-top:1px solid rgba(255,255,255,0.06)';
+  menu.appendChild(hr2);
+  var github = document.createElement('div');
+  github.innerHTML = '⭐ Star on GitHub';
+  github.style.cssText = 'padding:5px 8px;border-radius:4px;color:#58a6ff;cursor:pointer;font-size:10px;text-align:center';
+  github.addEventListener('mouseenter', function() {{ github.style.background = 'rgba(88,166,255,0.1)'; }});
+  github.addEventListener('mouseleave', function() {{ github.style.background = ''; }});
+  github.addEventListener('click', function() {{ window.ipc.postMessage(JSON.stringify({{url:'https://github.com/Jedeiah/agent-critter'}})); menu.style.display = 'none'; }});
+  menu.appendChild(github);
   document.body.style.pointerEvents = 'auto';
   menu.style.display = 'block';
   menu.style.right = '4px';
