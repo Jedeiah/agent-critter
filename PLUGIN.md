@@ -4,14 +4,12 @@
 
 ### 方式一：GitHub 市场（推荐）
 
-无需下载任何东西，直接在 Claude Code 中添加：
-
 ```
 /plugin marketplace add github.com/Jedeiah/agent-critter
 /plugin install agent-critter@agent-critter
 ```
 
-Claude Code 会自动从 GitHub 拉取插件配置和二进制文件。
+安装后还需下载二进制文件（从 [Releases](https://github.com/Jedeiah/agent-critter/releases/latest) 下载对应平台），放入插件目录并 `chmod +x`。
 
 ### 方式二：本地安装
 
