@@ -88,6 +88,21 @@ open https://petdex.crafter.run
 npx petdex install <名字>
 ```
 
+## 数据存储
+
+位置、缩放等配置保存在插件目录下的 `data/` 文件夹中：
+
+```
+插件目录/
+├── agent-critter
+├── data/
+│   ├── position    ← 窗口位置
+│   └── pet-scale   ← 缩放比例
+└── ...
+```
+
+卸载插件不会删除该目录，重新安装后数据保留。
+
 ## 卸载
 
 ```
