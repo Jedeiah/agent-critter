@@ -4,10 +4,11 @@
 
 ### 方式一：GitHub 市场（推荐）
 
-```
-/plugin marketplace add github.com/Jedeiah/agent-critter
-/plugin install agent-critter@agent-critter
-```
+1. 在 Claude Code 中输入 `/plugin`
+2. 选择 **Marketplaces** → **Add Marketplace**
+3. 输入 `Jedeiah/agent-critter`，回车
+4. 回到 **Plugins**，找到 `agent-critter`，选择 **Install**
+5. 输入 `/reload-plugins` 重载插件
 
 安装后自动启动桌宠。无需额外操作。
 
