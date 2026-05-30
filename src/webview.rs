@@ -154,7 +154,6 @@ document.addEventListener('mouseup', function() {{
 pet.addEventListener('contextmenu', function(e) {{
   e.preventDefault();
   // Activate the window so timers & blur work
-  window.focus();
   window.ipc.postMessage(JSON.stringify({{type:'focus'}}));
   var menu = document.getElementById('pet-menu');
   if (!menu) {{
@@ -228,10 +227,7 @@ pet.addEventListener('dblclick', function(e) {{
   window.setBubble('会话: ' + (window.__sessions||0) + ' | 状态: ' + (window.__stateLabel||'idle'), 3000);
 }});
 
-// --- Hover activates window ---
-pet.addEventListener('mouseenter', function() {{
-  window.ipc.postMessage(JSON.stringify({{type:'focus'}}));
-}});
+
 </script>
 </body></html>"#, mime=mime, b64=b64, slug_json=slug_json, pets_json=pets_json)
 }

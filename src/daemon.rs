@@ -49,7 +49,6 @@ pub enum UiCommand {
     Move { dx: i32, dy: i32 },
     SwitchPet { slug: String },
     IdleAction { action_state: &'static str, bubble: &'static str },
-    Focus,
     Quit,
 }
 
@@ -114,9 +113,6 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 if let Some(slug) = v.get("theme").and_then(|t| t.as_str()) {
                     let _ = proxy_ipc.send_event(UiCommand::SwitchPet { slug: slug.into() });
                 }
-                if v.get("type").and_then(|t| t.as_str()) == Some("focus") {
-                    let _ = proxy_ipc.send_event(UiCommand::Focus);
-                }
                 if v.get("type").and_then(|t| t.as_str()) == Some("move") {
                     let dx = v.get("dx").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
                     let dy = v.get("dy").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
@@ -134,6 +130,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
       if !ns.is_null() { unsafe {
         let win: &objc::runtime::Object = &*(ns as *const objc::runtime::Object);
         let _: () = objc::msg_send![win, setOpaque: false];
+        let _: () = objc::msg_send![win, setAcceptsMouseMovedEvents: true];
         let c: *mut objc::runtime::Object = objc::msg_send![objc::class!(NSColor), clearColor];
         let _: () = objc::msg_send![win, setBackgroundColor: c];
         let cv: *mut objc::runtime::Object = objc::msg_send![win, contentView];
@@ -271,20 +268,6 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                         if let Some(ref wv) = webview {
                             let _ = wv.load_html(&crate::webview::build_page(&bytes, &slug, &pj));
                         }
-                    }
-                }
-                UiCommand::Focus => {
-                    #[cfg(target_os = "macos")]
-                    { use tao::platform::macos::WindowExtMacOS;
-                      let _ = window.ns_window(); // keeps reference alive
-                      unsafe {
-                        let ns = window.ns_window() as *mut objc::runtime::Object;
-                        if !ns.is_null() {
-                          let _: () = objc::msg_send![ns, makeKeyAndOrderFront: std::ptr::null::<objc::runtime::Object>()];
-                          let app: *mut objc::runtime::Object = objc::msg_send![objc::class!(NSApplication), sharedApplication];
-                          let _: () = objc::msg_send![app, activateIgnoringOtherApps: true];
-                        }
-                      }
                     }
                 }
                 UiCommand::IdleAction { action_state, bubble } => {
