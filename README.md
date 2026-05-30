@@ -94,15 +94,7 @@ bash scripts/build-plugin.sh
 
 ## 数据存储
 
-位置、缩放等配置保存在插件目录下的 `data/`：
-
-```
-插件目录/
-├── agent-critter
-├── data/
-│   ├── position    ← 窗口位置
-│   └── pet-scale   ← 缩放比例
-```
+位置、缩放等配置保存在 `~/.agent-critter/data/`：
 
 ## 技术栈
 
