@@ -39,7 +39,7 @@
 /plugin install agent-critter@agent-critter
 ```
 
-安装后还需下载对应平台的二进制文件，放入插件目录。详见 [PLUGIN.md](PLUGIN.md)。
+安装后自动启动桌宠。支持 GitHub 市场和本地 zip 两种方式，详见 [PLUGIN.md](PLUGIN.md)。
 
 ### 独立运行
 

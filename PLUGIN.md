@@ -9,7 +9,7 @@
 /plugin install agent-critter@agent-critter
 ```
 
-安装后还需下载二进制文件（从 [Releases](https://github.com/Jedeiah/agent-critter/releases/latest) 下载对应平台），放入插件目录并 `chmod +x`。
+安装后自动启动桌宠。无需额外操作。
 
 ### 方式二：本地安装
 
