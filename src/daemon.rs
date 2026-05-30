@@ -335,8 +335,10 @@ pub fn start_detached_daemon(_port: u16) -> bool {
 pub fn fixed_port() -> u16 { FIXED_PORT }
 
 fn data_dir() -> std::path::PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
-    std::path::PathBuf::from(home).join(".agent-critter").join("data")
+    // Plugin install directory (where the binary lives)
+    std::env::current_exe().unwrap_or_default()
+        .parent().unwrap_or(std::path::Path::new("."))
+        .join("data")
 }
 
 fn save_scale(s: f32) {
