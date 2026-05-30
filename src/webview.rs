@@ -38,7 +38,7 @@ pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str) -> String {
 <script>
 var COLS = 8, ROWS = 9;
 var STATES = {{
-  idle:           {{ row: 0, frames: [{{c:0,d:280}},{{c:1,d:110}},{{c:2,d:110}},{{c:3,d:140}},{{c:4,d:140}},{{c:5,d:320}}], slow: 6 }},
+  idle:           {{ row: 0, frames: [{{c:0,d:140}},{{c:1,d:55}},{{c:2,d:55}},{{c:3,d:70}},{{c:4,d:70}},{{c:5,d:160}}], slow: 8 }},
   "running-right":{{ row: 1, count: 8, dur: 120, last: 220 }},
   "running-left": {{ row: 2, count: 8, dur: 120, last: 220 }},
   waving:         {{ row: 3, count: 4, dur: 140, last: 280 }},
