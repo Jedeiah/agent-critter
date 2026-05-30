@@ -37,7 +37,7 @@ jobs:
           mkdir dist
           mkdir tmp
           Copy-Item -Recurse .claude-plugin tmp\.claude-plugin
-          Copy-Item marketplace.json tmp\marketplace.json
+          Copy-Item .claude-plugin\marketplace.json tmp\marketplace.json
           Copy-Item -Recurse hooks tmp\hooks
           Copy-Item -Recurse assets tmp\assets
           Copy-Item PLUGIN.md tmp\
@@ -76,7 +76,7 @@ jobs:
         run: |
           mkdir -p dist tmp
           cp -r .claude-plugin tmp/
-          cp marketplace.json tmp/marketplace.json
+          cp .claude-plugin/marketplace.json tmp/marketplace.json
           cp -r hooks tmp/
           cp -r assets tmp/
           cp PLUGIN.md tmp/
