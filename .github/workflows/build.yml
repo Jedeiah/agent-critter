@@ -49,7 +49,7 @@ jobs:
           cp -r assets tmp/
           cp PLUGIN.md tmp/
           cp README.md tmp/
-          cp bin/agent-critter tmp/
+          cp bin/agent-critter tmp/bin/
           cd tmp && zip -r ../dist/agent-critter-plugin-macos.zip . && cd ..
 
       - name: Upload artifact
@@ -98,7 +98,8 @@ jobs:
           Copy-Item -Recurse assets tmp\assets
           Copy-Item PLUGIN.md tmp\
           Copy-Item README.md tmp\
-          Copy-Item bin\agent-critter.exe tmp\agent-critter.exe
+          New-Item -ItemType Directory -Force tmp\bin
+          Copy-Item bin\agent-critter.exe tmp\bin\agent-critter.exe
           Compress-Archive -Path tmp\* -DestinationPath dist\agent-critter-plugin-windows.zip -Force
 
       - name: Upload artifact
