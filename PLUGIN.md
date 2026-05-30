@@ -1,41 +1,65 @@
 # Agent Critter — 插件使用指南
 
-## 安装
+## 安装方式
 
-1. 在 Claude Code 中添加本地 marketplace：
+### 方式一：GitHub 市场（推荐）
+
+无需下载任何东西，直接在 Claude Code 中添加：
+
+```
+/plugin marketplace add github.com/Jedeiah/agent-critter
+/plugin install agent-critter@agent-critter
+```
+
+Claude Code 会自动从 GitHub 拉取插件配置和二进制文件。
+
+### 方式二：本地安装
+
+1. 从 [Releases](https://github.com/Jedeiah/agent-critter/releases) 下载插件包并解压
+2. 添加本地 marketplace：
    ```
-   /plugin marketplace add <插件包目录路径>
+   /plugin marketplace add /path/to/解压目录
    ```
-2. 安装插件：
+3. 安装：
    ```
    /plugin install agent-critter@agent-critter
-   ```
-3. 重启 Claude Code 或执行：
-   ```
-   /reload-plugins
    ```
 
 ## 使用
 
-插件安装后会自动启动桌宠守护进程。无需额外配置。
+插件安装后自动启动桌宠。无需额外配置。
 
 ### 交互
 
 | 操作 | 效果 |
 |------|------|
 | **单击宠物** | 随机互动文案 + 动作 |
-| **双击宠物** | 显示当前 Hook 状态 |
-| **右键** | 宠物列表 + 缩放调节 + 退出 |
-| **拖拽宠物** | 移动桌宠位置 |
-| **缩放** | 右键菜单 `−` `+` 按钮调节 0.5x ~ 1.5x |
+| **双击宠物** | 显示当前 Hook 状态（空闲/工作中/等待确认...） |
+| **右键** | 宠物列表 + 缩放调节 + GitHub + 退出 |
+| **拖拽** | 移动桌宠位置（拖背景框） |
+| **缩放** | 右键菜单 `−` `+` 调节 0.5x ~ 1.5x |
 
-### 下载更多宠物
+### 安装更多宠物
+
+支持 Petdex 社区 2700+ 精灵：
 
 ```bash
 npx -y petdex install <名字>
 ```
 
-右键菜单中可切换已安装的宠物。
+右键菜单可切换已安装宠物。
+
+## 状态说明
+
+桌宠会根据 Claude Code 的工作状态自动切换动画：
+
+| 动画 | 触发条件 |
+|------|---------|
+| 😴 呼吸待机 | 空闲 / SessionStart / Stop |
+| 🏃 左右奔跑 | 工作中（PreToolUse / PostToolUse 等） |
+| ⏳ 等待 | 等待确认（PermissionRequest / 弹窗） |
+| 🔍 检查 | 工具异常（PostToolUseFailure / 限流） |
+| 💥 崩溃 | 严重错误（认证失败 / 账单 / 模型） |
 
 ## 卸载
 
@@ -47,14 +71,14 @@ npx -y petdex install <名字>
 
 ### 桌宠不显示
 
-确保二进制文件 `agent-critter` 在插件目录根目录下，且具有执行权限：
 ```bash
-chmod +x agent-critter
+pkill agent-critter
 ```
 
-### 端口冲突
+然后重启 Claude Code。
 
-桌宠使用端口 7890。如果冲突，杀掉旧进程：
+### 端口 7890 被占用
+
 ```bash
 pkill agent-critter
 ```
