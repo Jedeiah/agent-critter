@@ -1,0 +1,215 @@
+/// Petdex-verbatim HTML/CSS/JS. Only changes:
+/// - spritesheet loaded as base64 data URI (instead of `url('spritesheet.webp')`)
+/// - setState / setBubble bridges added for Rust communication
+pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str) -> String {
+    let mime = if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+        "image/webp"
+    } else {
+        "image/png"
+    };
+    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes);
+    let slug_json = serde_json::to_string(current_slug).unwrap_or_else(|_| "\"\"".into());
+
+    format!(r#"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; width: 100%; height: 100%; font-family: -apple-system, system-ui, sans-serif; }}
+  body {{ -webkit-user-select: none; user-select: none; pointer-events: none; }}
+  .stage {{ position: fixed; left: 8px; }}
+  .pet {{
+    aspect-ratio: 192 / 208;
+    width: 4.5rem;
+    image-rendering: pixelated;
+    background-image: url('data:{mime};base64,{b64}');
+    background-repeat: no-repeat;
+    background-size: 800% 900%;
+    background-position: 0% 0%;
+    pointer-events: auto;
+    cursor: grab;
+  }}
+  .pet.dragging {{ cursor: grabbing; }}
+</style>
+</head>
+<body>
+<div class="stage"><div class="pet" id="pet" data-state="idle"></div></div>
+<script>
+var COLS = 8, ROWS = 9;
+var STATES = {{
+  idle:           {{ row: 0, frames: [{{c:0,d:280}},{{c:1,d:110}},{{c:2,d:110}},{{c:3,d:140}},{{c:4,d:140}},{{c:5,d:320}}] }},
+  "running-right":{{ row: 1, count: 8, dur: 120, last: 220 }},
+  "running-left": {{ row: 2, count: 8, dur: 120, last: 220 }},
+  waving:         {{ row: 3, count: 4, dur: 140, last: 280 }},
+  jumping:        {{ row: 4, count: 5, dur: 140, last: 280 }},
+  failed:         {{ row: 5, count: 8, dur: 140, last: 240 }},
+  waiting:        {{ row: 6, count: 6, dur: 150, last: 260 }},
+  running:        {{ row: 7, count: 6, dur: 120, last: 220 }},
+  review:         {{ row: 8, count: 6, dur: 150, last: 280 }},
+}};
+var CURRENT_SLUG = {slug_json};
+window.__PETS = {pets_json};
+function buildFrames(s) {{
+  if (s.frames) return s.frames.map(function(f) {{ return {{ c: f.c, r: s.row, d: f.d }}; }});
+  return Array.from({{length: s.count}}, function(_,i) {{ return {{ c: i, r: s.row, d: i === s.count - 1 ? s.last : s.dur }}; }});
+}}
+function pos(c, r) {{ return c/(COLS-1)*100+'% '+r/(ROWS-1)*100+'%'; }}
+var pet = document.getElementById('pet');
+var stageEl = pet.parentElement;
+if (stageEl) {{
+  stageEl.style.top = '34px';
+  stageEl.style.left = '8px';
+  stageEl.style.position = 'fixed';
+}}
+var currentState = 'idle', stateTimer = null;
+function play(state) {{
+  if (state === currentState) return;
+  currentState = state;
+  pet.dataset.state = state;
+  if (stateTimer) {{ clearTimeout(stateTimer); stateTimer = null; }}
+  var def = STATES[state] || STATES.idle;
+  var frames = buildFrames(def);
+  var i = 0;
+  pet.style.backgroundPosition = pos(frames[0].c, frames[0].r);
+  if (frames.length === 1) return;
+  (function tick() {{
+    stateTimer = setTimeout(function() {{
+      i = (i + 1) % frames.length;
+      pet.style.backgroundPosition = pos(frames[i].c, frames[i].r);
+      tick();
+    }}, frames[i].d);
+  }})();
+}}
+play('idle');
+
+// --- Bridge ---
+window.setState = function(state, durationMs) {{
+  play(state);
+  if (durationMs) setTimeout(function() {{ play('idle'); }}, durationMs);
+}};
+
+// --- Bubble ---
+var bubbleEl = null, bubbleTextEl = null;
+function ensureBubble() {{
+  if (bubbleEl) return bubbleEl;
+  bubbleEl = document.createElement('div');
+  bubbleEl.id = 'pet-bubble';
+  bubbleEl.style.cssText = 'position:fixed;padding:4px 8px;border-radius:10px;background:#fff;color:#111;font:600 11px system-ui;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,.3);text-align:left;white-space:normal;max-width:190px;display:flex;align-items:center;gap:6px;opacity:0;transition:opacity 180ms ease;pointer-events:none;z-index:5';
+  bubbleTextEl = document.createElement('span');
+  bubbleTextEl.style.cssText = 'display:block;min-width:0';
+  bubbleEl.appendChild(bubbleTextEl);
+  document.body.appendChild(bubbleEl);
+  return bubbleEl;
+}}
+function positionBubble() {{
+  if (!bubbleEl || !bubbleTextEl.textContent) return;
+  var rect = pet.getBoundingClientRect();
+  var bw = bubbleEl.offsetWidth || 100;
+  var left = Math.max(2, Math.min(window.innerWidth-bw-2, rect.left+rect.width/2-bw/2));
+  bubbleEl.style.left = left+'px';
+  bubbleEl.style.top = Math.max(2, rect.top-(bubbleEl.offsetHeight||22)-10)+'px';
+}}
+window.setBubble = function(text, durationMs) {{
+  var el = ensureBubble();
+  bubbleTextEl.textContent = text || '';
+  if (text) {{
+    el.style.opacity = '1';
+    positionBubble();
+    if (durationMs) setTimeout(function() {{ el.style.opacity = '0'; }}, durationMs);
+  }} else {{
+    el.style.opacity = '0';
+  }}
+}};
+
+// --- Drag (same approach as Petdex: JS mousedown/move/up → IPC) ---
+var dragging = false, wasDrag = false, startX = 0, startY = 0;
+pet.addEventListener('mousedown', function(e) {{
+  if (e.button !== 0) return;
+  dragging = true; wasDrag = false;
+  startX = e.screenX; startY = e.screenY;
+  pet.classList.add('dragging');
+}});
+document.addEventListener('mousemove', function(e) {{
+  if (!dragging) return;
+  var dx = e.screenX - startX, dy = e.screenY - startY;
+  if (Math.abs(dx) > 2 || Math.abs(dy) > 2) wasDrag = true;
+  window.ipc.postMessage(JSON.stringify({{type:'move',dx:dx,dy:dy}}));
+  startX = e.screenX; startY = e.screenY;
+}});
+document.addEventListener('mouseup', function() {{
+  if (!dragging) return;
+  dragging = false;
+  pet.classList.remove('dragging');
+}});
+
+// --- Right-click pet menu ---
+pet.addEventListener('contextmenu', function(e) {{
+  e.preventDefault();
+  var menu = document.getElementById('pet-menu');
+  if (!menu) {{
+    menu = document.createElement('div');
+    menu.id = 'pet-menu';
+    menu.style.cssText = 'position:fixed;background:rgba(20,20,22,0.96);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px;z-index:999;min-width:130px;max-height:240px;overflow-y:auto;pointer-events:auto;display:none';
+    document.body.appendChild(menu);
+    document.addEventListener('click', function(ev) {{ if (menu && !menu.contains(ev.target)) menu.style.display = 'none'; }});
+  }}
+  menu.innerHTML = '';
+  (window.__PETS || []).forEach(function(p) {{
+    var item = document.createElement('div');
+    item.textContent = p.name;
+    item.style.cssText = 'padding:4px 8px;border-radius:4px;color:#ccc;cursor:pointer;font-size:11px';
+    if (p.slug === CURRENT_SLUG) item.style.color = '#00e676';
+    item.addEventListener('mouseenter', function() {{ item.style.background = 'rgba(255,255,255,0.1)'; item.style.color = '#fff'; }});
+    item.addEventListener('mouseleave', function() {{ item.style.background = ''; item.style.color = p.slug===CURRENT_SLUG?'#00e676':'#ccc'; }});
+    item.addEventListener('click', function() {{
+      window.ipc.postMessage(JSON.stringify({{theme:p.slug}}));
+      menu.style.display = 'none';
+    }});
+    menu.appendChild(item);
+  }});
+  menu.style.display = 'block';
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 140) + 'px';
+  menu.style.top = e.clientY + 'px';
+}});
+
+// --- Click to dismiss bubble ---
+pet.addEventListener('click', function(e) {{ if (bubbleEl) bubbleEl.style.opacity = '0'; }});
+</script>
+</body></html>"#, mime=mime, b64=b64, slug_json=slug_json, pets_json=pets_json)
+}
+
+pub fn build_empty_page(message: &str) -> String {
+    let msg_json = serde_json::to_string(message).unwrap_or_else(|_| "\"\"".into());
+    format!(r#"<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+html,body{{margin:0;padding:0;background:transparent;width:100%;height:100%;font-family:-apple-system,sans-serif;-webkit-app-region:drag;display:flex;align-items:center;justify-content:center}}
+p{{color:rgba(255,255,255,0.6);font-size:9px;text-align:center;white-space:pre-line;-webkit-app-region:no-drag}}
+</style></head><body><p>{msg}</p></body></html>"#, msg=msg_json)
+}
+
+pub fn load_pet_bytes(slug: &str) -> Option<Vec<u8>> {
+    let home = std::env::var("HOME").ok()?;
+    for base in &[format!("{}/.codex/pets", home), format!("{}/.petdex/pets", home)] {
+        for ext in &["webp", "png"] {
+            let path = format!("{}/{}/spritesheet.{}", base, slug, ext);
+            if let Ok(b) = std::fs::read(&path) { return Some(b); }
+        }
+    }
+    None
+}
+
+pub fn find_first_pet() -> Option<(Vec<u8>, String)> {
+    let home = std::env::var("HOME").ok()?;
+    for base in &[format!("{}/.codex/pets", home), format!("{}/.petdex/pets", home)] {
+        let dir = std::fs::read_dir(base).ok()?;
+        for entry in dir.flatten() {
+            let path = entry.path();
+            if !path.is_dir() { continue; }
+            let slug = path.file_name()?.to_str()?.to_string();
+            for ext in &["webp", "png"] {
+                let sheet = path.join(format!("spritesheet.{}", ext));
+                if let Ok(b) = std::fs::read(&sheet) { return Some((b, slug)); }
+            }
+        }
+    }
+    None
+}
