@@ -106,6 +106,17 @@ bash scripts/build-plugin.sh
 | Hook | TCP JSON (Claude Code plugin hooks) |
 | 精灵 | Petdex 8×9 spritesheet (webp) |
 
+## Roadmap
+
+正在计划中的功能：
+
+- [x] Claude Code 实时状态同步
+- [ ] 适配更多 Agent — **Codex CLI** / **OpenCode** / **Gemini CLI**
+- [ ] 更多 Hook 事件处理（Subagent、Compact 等）
+- [ ] 🎙️ **宠物语音** — 状态切换时播放音效或 TTS 语音
+- [ ] 精灵市场内置（直接浏览和安装 Petdex 社区精灵）
+- [ ] 主题系统 — 自定义 UI 配色
+
 ## 致谢
 
 - [Petdex](https://github.com/crafter-station/petdex) — 精灵格式、HTML 模板参考
