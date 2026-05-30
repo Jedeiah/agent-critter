@@ -90,11 +90,11 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     if let Some((x, y)) = load_position() {
         window.set_outer_position(tao::dpi::PhysicalPosition::new(x, y));
     } else if let Some(monitor) = window.primary_monitor() {
-        let size = monitor.size();
-        let ww: i32 = 140; let wh: i32 = 180;
+        let screen = monitor.size();
+        let win_size = window.outer_size();
         window.set_outer_position(tao::dpi::PhysicalPosition::new(
-            (size.width as i32).saturating_sub(ww + 40),
-            (size.height as i32).saturating_sub(wh + 40),
+            (screen.width as i32).saturating_sub(win_size.width as i32 + 40),
+            (screen.height as i32).saturating_sub(win_size.height as i32 + 40),
         ));
     }
 
