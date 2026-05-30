@@ -72,6 +72,22 @@ npx -y petdex install <名字>
 | 🔍 检查 | 工具异常（PostToolUseFailure / 限流） |
 | 💥 崩溃 | 严重错误（认证失败 / 账单 / 模型） |
 
+## 关于 Petdex
+
+Agent Critter 完全兼容 [Petdex](https://petdex.crafter.run) 社区生态：
+
+- **2700+ 精灵** — 免费开源，一键安装
+- **社区创作** — 用户可上传图片生成自定义精灵（[Submit](https://petdex.crafter.run)）
+- **精灵格式** — 单张 8 列 × 9 行 spritesheet（webp），每行一个动作
+
+```bash
+# 浏览精灵库
+open https://petdex.crafter.run
+
+# 安装任意精灵
+npx petdex install <名字>
+```
+
 ## 卸载
 
 ```
