@@ -84,9 +84,12 @@ play('idle');
 
 // --- Bridge ---
 window.setState = function(state, durationMs) {{
+  window.__stateLabel = state;
   play(state);
   if (durationMs) setTimeout(function() {{ play('idle'); }}, durationMs);
 }};
+window.__stateLabel = 'idle';
+window.__sessions = 0;
 
 // --- Bubble ---
 var bubbleEl = null, bubbleTextEl = null;
@@ -145,16 +148,23 @@ document.addEventListener('mouseup', function() {{
 // --- Right-click pet menu ---
 pet.addEventListener('contextmenu', function(e) {{
   e.preventDefault();
+  // Activate the window so timers & blur work
+  window.focus();
+  window.ipc.postMessage(JSON.stringify({{type:'focus'}}));
   var menu = document.getElementById('pet-menu');
   if (!menu) {{
     menu = document.createElement('div');
     menu.id = 'pet-menu';
-    menu.style.cssText = 'position:fixed;background:rgba(20,20,22,0.96);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px;z-index:999;min-width:130px;max-height:240px;overflow-y:auto;pointer-events:auto;display:none';
+    menu.style.cssText = 'position:fixed;background:rgba(20,20,22,0.96);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px;z-index:999;min-width:100px;max-height:160px;overflow-y:auto;pointer-events:auto;display:none';
     document.body.appendChild(menu);
-    document.addEventListener('click', function(ev) {{ if (menu && !menu.contains(ev.target)) menu.style.display = 'none'; }});
+    // Dismiss on outside click or window blur
+    document.addEventListener('click', function(ev) {{ if (menu && menu.style.display === 'block' && !menu.contains(ev.target) && ev.target !== pet) {{ menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }} }});
+    window.addEventListener('blur', function() {{ if (menu) {{ menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }} }});
   }}
   menu.innerHTML = '';
-  (window.__PETS || []).forEach(function(p) {{
+  var pets = window.__PETS || [];
+  if (pets.length === 0) pets = [{{slug:'default',name:'Default'}}];
+  pets.forEach(function(p) {{
     var item = document.createElement('div');
     item.textContent = p.name;
     item.style.cssText = 'padding:4px 8px;border-radius:4px;color:#ccc;cursor:pointer;font-size:11px';
@@ -164,16 +174,56 @@ pet.addEventListener('contextmenu', function(e) {{
     item.addEventListener('click', function() {{
       window.ipc.postMessage(JSON.stringify({{theme:p.slug}}));
       menu.style.display = 'none';
+      document.body.style.pointerEvents = 'none';
     }});
     menu.appendChild(item);
   }});
+  menu.appendChild(document.createElement('hr'));
+  var quit = document.createElement('div');
+  quit.textContent = '× 退出';
+  quit.style.cssText = 'padding:4px 8px;border-radius:4px;color:#f88;cursor:pointer;font-size:11px';
+  quit.addEventListener('click', function() {{ window.ipc.postMessage('quit'); menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }});
+  menu.appendChild(quit);
+  document.body.style.pointerEvents = 'auto';
   menu.style.display = 'block';
-  menu.style.left = Math.min(e.clientX, window.innerWidth - 140) + 'px';
-  menu.style.top = e.clientY + 'px';
+  menu.style.right = '4px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 170) + 'px';
+  e.stopPropagation();
+  // Auto-close after 3s (reset on hover)
+  clearTimeout(window.__menuTimer);
+  window.__menuTimer = setTimeout(function() {{ menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }}, 3000);
+  menu.onmouseenter = function() {{ clearTimeout(window.__menuTimer); }};
+  menu.onmouseleave = function() {{ window.__menuTimer = setTimeout(function() {{ menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }}, 1500); }};
 }});
 
-// --- Click to dismiss bubble ---
-pet.addEventListener('click', function(e) {{ if (bubbleEl) bubbleEl.style.opacity = '0'; }});
+// --- Single-click: random interaction ---
+var clicks = [
+  '戳我干嘛~',
+  '喵！',
+  '别闹，正忙着呢',
+  '嘿嘿，痒~',
+  '有什么事吗主人？',
+  '（打滚）',
+  '哼，不理你',
+  '再戳就咬你哦',
+  '嗯？叫我吗？',
+  '（伸懒腰）今天天气不错~',
+];
+pet.addEventListener('click', function(e) {{
+  if (wasDrag) return;
+  var t = clicks[Math.floor(Math.random() * clicks.length)];
+  window.setBubble(t, 3000);
+}});
+
+// --- Double-click shows status ---
+pet.addEventListener('dblclick', function(e) {{
+  window.setBubble('会话: ' + (window.__sessions||0) + ' | 状态: ' + (window.__stateLabel||'idle'), 3000);
+}});
+
+// --- Hover activates window ---
+pet.addEventListener('mouseenter', function() {{
+  window.ipc.postMessage(JSON.stringify({{type:'focus'}}));
+}});
 </script>
 </body></html>"#, mime=mime, b64=b64, slug_json=slug_json, pets_json=pets_json)
 }

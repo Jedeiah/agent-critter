@@ -29,3 +29,6 @@ Thumbs.db
 
 # Build artifacts
 .reasonix/
+
+# Runtime data
+data/
