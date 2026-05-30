@@ -21,7 +21,7 @@ pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str) -> String {
   .stage {{ position: fixed; left: 8px; }}
   .pet {{
     aspect-ratio: 192 / 208;
-    width: 4.5rem;
+    width: 7rem;
     image-rendering: pixelated;
     background-image: url('data:{mime};base64,{b64}');
     background-repeat: no-repeat;
@@ -58,8 +58,8 @@ function pos(c, r) {{ return c/(COLS-1)*100+'% '+r/(ROWS-1)*100+'%'; }}
 var pet = document.getElementById('pet');
 var stageEl = pet.parentElement;
 if (stageEl) {{
-  stageEl.style.top = '50px';
-  stageEl.style.left = '34px';
+  stageEl.style.top = '30px';
+  stageEl.style.left = '14px';
   stageEl.style.position = 'fixed';
 }}
 // Debug: show window bounds
