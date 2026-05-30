@@ -262,7 +262,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     let mut running_dir = "running-right";
     let mut exit_at: Option<std::time::Instant> = None;
     let state_exit = Arc::clone(&state);
-    let mut webview = Some(webview);
+    let webview = Some(webview);
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_millis(5));
 
