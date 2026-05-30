@@ -38,7 +38,7 @@ pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str) -> String {
 <script>
 var COLS = 8, ROWS = 9;
 var STATES = {{
-  idle:           {{ row: 0, frames: [{{c:0,d:140}},{{c:1,d:55}},{{c:2,d:55}},{{c:3,d:70}},{{c:4,d:70}},{{c:5,d:160}}], slow: 8 }},
+  idle:           {{ row: 0, frames: [{{c:0,d:280}},{{c:1,d:110}},{{c:2,d:110}},{{c:3,d:140}},{{c:4,d:140}},{{c:5,d:320}}] }},
   "running-right":{{ row: 1, count: 8, dur: 120, last: 220 }},
   "running-left": {{ row: 2, count: 8, dur: 120, last: 220 }},
   waving:         {{ row: 3, count: 4, dur: 140, last: 280 }},
@@ -51,7 +51,7 @@ var STATES = {{
 var CURRENT_SLUG = {slug_json};
 window.__PETS = {pets_json};
 function buildFrames(s) {{
-  if (s.frames) {{ var slow = s.slow || 1; return s.frames.map(function(f) {{ return {{ c: f.c, r: s.row, d: f.d * slow }}; }}); }}
+  if (s.frames) return s.frames.map(function(f) {{ return {{ c: f.c, r: s.row, d: f.d }}; }});
   return Array.from({{length: s.count}}, function(_,i) {{ return {{ c: i, r: s.row, d: i === s.count - 1 ? s.last : s.dur }}; }});
 }}
 function pos(c, r) {{ return c/(COLS-1)*100+'% '+r/(ROWS-1)*100+'%'; }}
