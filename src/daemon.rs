@@ -86,9 +86,17 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         .with_resizable(false)
         .build(&event_loop).expect("window");
 
-    // Restore saved position
+    // Restore saved position, or default to bottom-right
     if let Some((x, y)) = load_position() {
         window.set_outer_position(tao::dpi::PhysicalPosition::new(x, y));
+    } else {
+        // Place at bottom-right corner of screen
+        #[cfg(target_os = "macos")]
+        {
+            let (sw, sh) = default_screen_bottom_right();
+            let ww: i32 = 140; let wh: i32 = 180;
+            window.set_outer_position(tao::dpi::PhysicalPosition::new(sw - ww - 40, sh - wh - 40));
+        }
     }
 
     #[cfg(target_os = "macos")]
@@ -333,6 +341,19 @@ pub fn start_detached_daemon(_port: u16) -> bool {
     cmd.spawn().is_ok()
 }
 pub fn fixed_port() -> u16 { FIXED_PORT }
+
+#[cfg(target_os = "macos")]
+fn default_screen_bottom_right() -> (i32, i32) {
+    use objc::{msg_send, sel, class};
+    unsafe {
+        let screen: *mut objc::runtime::Object = msg_send![class!(NSScreen), mainScreen];
+        let frame: objc::runtime::Object = msg_send![screen, frame];
+        let size: objc::runtime::Object = msg_send![&frame, size];
+        let w: f64 = msg_send![&size, width];
+        let h: f64 = msg_send![&size, height];
+        (w as i32, h as i32)
+    }
+}
 
 fn data_dir() -> std::path::PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());

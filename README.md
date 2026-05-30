@@ -94,7 +94,13 @@ bash scripts/build-plugin.sh
 
 ## 数据存储
 
-位置、缩放等配置保存在 `~/.agent-critter/data/`：
+配置保存在 `~/.agent-critter/data/`：
+| 文件 | 内容 |
+|------|------|
+| `position` | 窗口位置（x, y） |
+| `pet-scale` | 缩放比例（0.5 ~ 1.5） |
+
+首次启动默认显示在屏幕右下角。
 
 ## 技术栈
 
