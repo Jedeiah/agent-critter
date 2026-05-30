@@ -65,9 +65,6 @@ if (stageEl) {{
   stageEl.style.alignItems = 'center';
   stageEl.style.justifyContent = 'center';
 }}
-// Debug: show window bounds
-document.documentElement.style.outline = '1px solid rgba(255,0,0,0.5)';
-document.documentElement.style.outlineOffset = '-1px';
 var currentState = 'idle', stateTimer = null;
 function play(state) {{
   if (state === currentState) return;
