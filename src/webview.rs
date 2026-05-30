@@ -18,7 +18,7 @@ pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str) -> String {
   html, body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; width: 100%; height: 100%; font-family: -apple-system, system-ui, sans-serif; }}
   body {{ -webkit-user-select: none; user-select: none; }}
   * {{ cursor: default !important; }}
-  .stage {{ position: fixed; left: 8px; }}
+  .stage {{ position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }}
   .pet {{
     aspect-ratio: 192 / 208;
     width: 7rem;
@@ -58,9 +58,12 @@ function pos(c, r) {{ return c/(COLS-1)*100+'% '+r/(ROWS-1)*100+'%'; }}
 var pet = document.getElementById('pet');
 var stageEl = pet.parentElement;
 if (stageEl) {{
-  stageEl.style.top = '30px';
-  stageEl.style.left = '14px';
   stageEl.style.position = 'fixed';
+  stageEl.style.width = '100%';
+  stageEl.style.height = '100%';
+  stageEl.style.display = 'flex';
+  stageEl.style.alignItems = 'center';
+  stageEl.style.justifyContent = 'center';
 }}
 // Debug: show window bounds
 document.documentElement.style.outline = '1px solid rgba(255,0,0,0.5)';
@@ -106,7 +109,7 @@ function ensureBubble() {{
   if (bubbleEl) return bubbleEl;
   bubbleEl = document.createElement('div');
   bubbleEl.id = 'pet-bubble';
-  bubbleEl.style.cssText = 'position:fixed;padding:4px 8px;border-radius:10px;background:#fff;color:#111;font:600 11px system-ui;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,.3);text-align:left;white-space:normal;max-width:190px;display:flex;align-items:center;gap:6px;opacity:0;transition:opacity 180ms ease;pointer-events:none;z-index:5';
+  bubbleEl.style.cssText = 'position:fixed;padding:4px 8px;border-radius:10px;background:#fff;color:#111;font:600 11px system-ui;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,.3);text-align:left;white-space:normal;max-width:80vw;min-width:40px;display:flex;align-items:center;gap:6px;opacity:0;transition:opacity 180ms ease;pointer-events:none;z-index:5';
   bubbleTextEl = document.createElement('span');
   bubbleTextEl.style.cssText = 'display:block;min-width:0';
   bubbleEl.appendChild(bubbleTextEl);
@@ -115,11 +118,11 @@ function ensureBubble() {{
 }}
 function positionBubble() {{
   if (!bubbleEl || !bubbleTextEl.textContent) return;
+  bubbleEl.style.left = '50%';
+  bubbleEl.style.transform = 'translateX(-50%)';
   var rect = pet.getBoundingClientRect();
-  var bw = bubbleEl.offsetWidth || 100;
-  var left = Math.max(2, Math.min(window.innerWidth-bw-2, rect.left+rect.width/2-bw/2));
-  bubbleEl.style.left = left+'px';
-  bubbleEl.style.top = Math.max(2, rect.top-(bubbleEl.offsetHeight||22)-10)+'px';
+  var bh = bubbleEl.offsetHeight || 22;
+  bubbleEl.style.top = Math.max(2, rect.top - bh - 10)+'px';
 }}
 window.setBubble = function(text, durationMs, persist) {{
   var el = ensureBubble();
@@ -197,6 +200,36 @@ pet.addEventListener('contextmenu', function(e) {{
   quit.addEventListener('click', function() {{ window.ipc.postMessage('quit'); menu.style.display = 'none'; }});
   menu.appendChild(quit);
   // GitHub link
+  // Size control
+  window.__petScale = window.__petScale || 1.0;
+  var sizeLabel = document.createElement('div');
+  sizeLabel.textContent = '🔍 大小 x' + window.__petScale.toFixed(1);
+  sizeLabel.style.cssText = 'padding:3px 8px;color:rgba(255,255,255,0.4);font-size:9px;text-align:center';
+  menu.appendChild(sizeLabel);
+  var sizeRow = document.createElement('div');
+  sizeRow.style.cssText = 'display:flex;gap:4px;justify-content:center;padding:2px 0';
+  var minus = document.createElement('div');
+  minus.textContent = '−'; minus.style.cssText = 'width:22px;text-align:center;color:#aaa;cursor:pointer;font-size:12px;border-radius:3px';
+  minus.addEventListener('mouseenter', function(){{ minus.style.background='rgba(255,255,255,0.1)'; }});
+  minus.addEventListener('mouseleave', function(){{ minus.style.background=''; }});
+  function applyScale(s) {{
+    window.__petScale = s;
+    document.body.style.zoom = s;
+    sizeLabel.textContent = '🔍 大小 x'+s.toFixed(1);
+    var pw = Math.ceil(112 * s); // pet visual width (7rem × 16px)
+    var ph = Math.ceil(pw / 192 * 208);
+    var ww = pw + 40; var wh = ph + 60;
+    window.ipc.postMessage(JSON.stringify({{type:'resize',w:ww, h:wh}}));
+    window.ipc.postMessage(JSON.stringify({{type:'saveScale',scale:s}}));
+  }}
+  var plus = document.createElement('div');
+  plus.textContent = '+'; plus.style.cssText = 'width:22px;text-align:center;color:#aaa;cursor:pointer;font-size:12px;border-radius:3px';
+  plus.addEventListener('mouseenter', function(){{ plus.style.background='rgba(255,255,255,0.1)'; }});
+  plus.addEventListener('mouseleave', function(){{ plus.style.background=''; }});
+  minus.addEventListener('click', function(e){{ e.stopPropagation(); applyScale(Math.max(0.5, window.__petScale - 0.1)); }});
+  plus.addEventListener('click', function(e){{ e.stopPropagation(); applyScale(Math.min(1.5, window.__petScale + 0.1)); }});
+  sizeRow.appendChild(minus); sizeRow.appendChild(plus);
+  menu.appendChild(sizeRow);
   var hr2 = document.createElement('hr');
   hr2.style.cssText = 'margin:4px 0;border:none;border-top:1px solid rgba(255,255,255,0.06)';
   menu.appendChild(hr2);
@@ -210,7 +243,7 @@ pet.addEventListener('contextmenu', function(e) {{
   document.body.style.pointerEvents = 'auto';
   menu.style.display = 'block';
   menu.style.right = '4px';
-  menu.style.top = Math.min(e.clientY, window.innerHeight - 170) + 'px';
+  menu.style.top = '4px';
   e.stopPropagation();
   // Auto-close after 3s (reset on hover)
   clearTimeout(window.__menuTimer);

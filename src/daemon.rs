@@ -134,6 +134,18 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                         }
                     }
                 }
+                if v.get("type").and_then(|t| t.as_str()) == Some("saveScale") {
+                    if let Some(s) = v.get("scale").and_then(|s| s.as_f64()) {
+                        save_scale(s as f32);
+                    }
+                }
+                if v.get("type").and_then(|t| t.as_str()) == Some("resize") {
+                    let w = v.get("w").and_then(|d| d.as_u64()).unwrap_or(140) as u32;
+                    let h = v.get("h").and_then(|d| d.as_u64()).unwrap_or(180) as u32;
+                    if let Ok(win) = drag_win.lock() {
+                        let _ = win.set_inner_size(tao::dpi::LogicalSize::new(w as f64, h as f64));
+                    }
+                }
                 if v.get("type").and_then(|t| t.as_str()) == Some("move") {
                     let dx = v.get("dx").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
                     let dy = v.get("dy").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
@@ -174,6 +186,11 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         }
       }}
     }
+
+    let saved_scale: f64 = std::fs::read_to_string(
+        data_dir().join("pet-scale")
+    ).ok().and_then(|s| s.trim().parse().ok()).unwrap_or(1.0);
+    let _ = webview.evaluate_script(&format!("window.__savedScale={};setTimeout(function(){{if(typeof applyScale==='function')applyScale(window.__savedScale)}},100)", saved_scale));
 
     // Polling + idle timer
     let state_poll = Arc::clone(&state);
@@ -317,20 +334,24 @@ pub fn start_detached_daemon(_port: u16) -> bool {
 }
 pub fn fixed_port() -> u16 { FIXED_PORT }
 
-fn pos_path() -> Option<std::path::PathBuf> {
-    let dir = std::env::current_dir().ok()?.join("data");
+fn data_dir() -> std::path::PathBuf {
+    std::env::current_dir().unwrap_or_default().join("data")
+}
+
+fn save_scale(s: f32) {
+    let dir = data_dir();
     let _ = std::fs::create_dir_all(&dir);
-    Some(dir.join("position"))
+    let _ = std::fs::write(dir.join("pet-scale"), s.to_string());
 }
 
 fn save_position(x: i32, y: i32) {
-    if let Some(p) = pos_path() {
-        let _ = std::fs::write(p, format!("{}\n{}", x, y));
-    }
+    let dir = data_dir();
+    let _ = std::fs::create_dir_all(&dir);
+    let _ = std::fs::write(dir.join("position"), format!("{}\n{}", x, y));
 }
 
 fn load_position() -> Option<(i32, i32)> {
-    let data = std::fs::read_to_string(pos_path()?).ok()?;
+    let data = std::fs::read_to_string(data_dir().join("position")).ok()?;
     let mut lines = data.trim().lines();
     let x: i32 = lines.next()?.parse().ok()?;
     let y: i32 = lines.next()?.parse().ok()?;
