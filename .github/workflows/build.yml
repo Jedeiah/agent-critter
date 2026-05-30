@@ -31,11 +31,25 @@ jobs:
       - name: Build release
         run: cargo build --release
 
-      - name: Upload artifact
+      - name: Package plugin
+        shell: pwsh
+        run: |
+          mkdir dist
+          mkdir tmp
+          Copy-Item -Recurse .claude-plugin tmp\.claude-plugin
+          Copy-Item -Recurse hooks tmp\hooks
+          Copy-Item -Recurse assets tmp\assets
+          Copy-Item PLUGIN.md tmp\
+          Copy-Item README.md tmp\
+          Copy-Item target\release\agent-critter.exe tmp\
+          Compress-Archive -Path tmp\* -DestinationPath dist\agent-critter-plugin-windows.zip -Force
+          Remove-Item -Recurse tmp
+
+      - name: Upload plugin package
         uses: actions/upload-artifact@v4
         with:
           name: agent-critter-windows
-          path: target/release/agent-critter.exe
+          path: dist/agent-critter-plugin-windows.zip
 
   build-macos:
     runs-on: macos-latest
@@ -57,11 +71,22 @@ jobs:
       - name: Build release
         run: cargo build --release
 
-      - name: Upload artifact
+      - name: Package plugin
+        run: |
+          mkdir -p dist tmp
+          cp -r .claude-plugin tmp/
+          cp -r hooks tmp/
+          cp -r assets tmp/
+          cp PLUGIN.md tmp/
+          cp README.md tmp/
+          cp target/release/agent-critter tmp/
+          cd tmp && zip -r ../dist/agent-critter-plugin-macos.zip . && cd ..
+
+      - name: Upload plugin package
         uses: actions/upload-artifact@v4
         with:
           name: agent-critter-macos
-          path: target/release/agent-critter
+          path: dist/agent-critter-plugin-macos.zip
 
   release:
     needs: [build-windows, build-macos]
@@ -76,5 +101,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/agent-critter-windows/agent-critter.exe
-            artifacts/agent-critter-macos/agent-critter
+            artifacts/agent-critter-windows/agent-critter-plugin-windows.zip
+            artifacts/agent-critter-macos/agent-critter-plugin-macos.zip

@@ -3,14 +3,14 @@
   "name": "agent-critter",
   "displayName": "Agent Critter",
   "version": "1.0.0",
-  "description": "一只可爱桌宠，实时展示 Claude Code 的工作状态 —— 乖巧等待、认真干活、歪头疑惑、踩坑犯错",
+  "description": "一只桌宠小精灵，实时展示 Claude Code 的工作状态。支持 Petdex 社区 2700+ 精灵，透明窗口、可拖拽、可缩放。",
   "author": {
     "name": "chj",
     "email": "jedeiah95@gmail.com",
-    "url": "https://github.com/Jedeiah/xxx"
+    "url": "https://github.com/Jedeiah"
   },
-  "homepage": "https://github.com/Jedeiah/xxx",
-  "repository": "https://github.com/Jedeiah/xxx",
+  "homepage": "https://github.com/Jedeiah/agent-critter",
+  "repository": "https://github.com/Jedeiah/agent-critter",
   "license": "MIT",
-  "keywords": ["agent-critter", "desk-pet", "桌宠", "cute", "productivity"]
+  "keywords": ["agent-critter", "desk-pet", "桌宠", "cute", "productivity", "petdex"]
 }
