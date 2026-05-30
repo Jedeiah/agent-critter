@@ -45,6 +45,7 @@ fn list_pets() -> Vec<PetInfo> {
 #[derive(Debug, Clone)]
 pub enum UiCommand {
     SetState { state: LightState, duration_ms: Option<u64> },
+    SwitchRunning, // toggle running direction
     Move { dx: i32, dy: i32 },
     SwitchPet { slug: String },
     IdleAction { action_state: &'static str, bubble: &'static str },
@@ -54,8 +55,10 @@ pub enum UiCommand {
 
 fn state_name(s: LightState) -> &'static str {
     match s {
-        LightState::Idle => "idle", LightState::Running => "running",
-        LightState::NeedConfirm => "waving", LightState::ToolError => "review",
+        LightState::Idle => "idle",
+        LightState::Running => "running-right", // default
+        LightState::NeedConfirm => "waiting",
+        LightState::ToolError => "review",
         LightState::ErrorFinal => "failed",
     }
 }
@@ -153,63 +156,71 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     std::thread::spawn(move || {
         let mut idle_since: Option<std::time::Instant> = None;
         let mut last_action: Option<std::time::Instant> = None;
-        let mut action_count: u32 = 0;
-        let idle_bubbles = [
-            "好无聊呀...",
-            "主人还在吗？",
-            "想和主人玩~",
-            "发呆中...",
-            "喵~ 有人吗？",
-            "（打哈欠）困了...",
-            "咦，有虫子飞过",
-            "（转圈圈）",
-            "今天写了多少行代码呀？",
-            "（趴下）休息一会...",
-            "要不要喝杯咖啡？",
-            "zZZ... 没有，我没睡着！",
+        let mut last_running_switch = std::time::Instant::now();
+        let bubbles = [
+            "好无聊呀...","主人还在吗？","想和主人玩~","发呆中...",
+            "（打哈欠）困了...","咦，有虫子飞过","（转圈圈）",
+            "今天写了多少行代码呀？","（趴下）休息一会...","zZZ... 困...",
+            "要不要喝杯咖啡？","（舔爪子）","窗外有鸟！",
+            "（追尾巴）","第几个bug了？","喵~ 有人吗？",
+            "想出去晒太阳...","（伸懒腰）","主人加油~",
         ];
-        let idle_states = ["jumping", "waving"];
+        let actions = ["jumping", "waving", "review"];
+        let mut tick: u64 = 0;
         loop {
-            std::thread::sleep(std::time::Duration::from_millis(1000));
+            std::thread::sleep(std::time::Duration::from_secs(1));
+            tick += 1;
             let cur = state_poll.lock().unwrap().current_state();
             let _ = proxy_poll.send_event(UiCommand::SetState { state: cur, duration_ms: None });
 
-            // Idle action logic
-            if cur == LightState::Idle {
-                if idle_since.is_none() {
-                    idle_since = Some(std::time::Instant::now());
-                    action_count = 0;
-                }
-                let idle_dur = idle_since.unwrap().elapsed().as_secs();
-                if idle_dur >= 30 && action_count < 2 {
-                    let should_act = match last_action {
-                        None => true,
-                        Some(t) => t.elapsed().as_secs() >= 30 + (idle_dur as u64 % 30),
-                    };
-                    if should_act {
-                        let idx = (idle_dur as usize / 7) % idle_bubbles.len();
-                        let state_idx = (idle_dur as usize / 13) % idle_states.len();
-                        let _ = proxy_poll.send_event(UiCommand::IdleAction {
-                            action_state: idle_states[state_idx],
-                            bubble: idle_bubbles[idx],
-                        });
-                        last_action = Some(std::time::Instant::now());
-                        action_count += 1;
-                    }
-                }
-            } else {
-                idle_since = None;
-                last_action = None;
-                action_count = 0;
+            if cur == LightState::Running && last_running_switch.elapsed().as_secs() >= 4 {
+                last_running_switch = std::time::Instant::now();
+                let _ = proxy_poll.send_event(UiCommand::SwitchRunning);
             }
+            if cur != LightState::Idle {
+                idle_since = None; last_action = None;
+                continue;
+            }
+            // Idle: only run probability every 10 ticks (~10s)
+            if tick % 10 != 0 { continue; }
+            let now = std::time::Instant::now();
+            let since = *idle_since.get_or_insert(now);
+            let elapsed = now.duration_since(since).as_secs();
+            if elapsed < 20 { continue; } // minimum 20s before first action
+            if elapsed > 7200 { continue; } // stop after 2h
+
+            // Cooldown: at least 20s between actions
+            if let Some(t) = last_action {
+                if t.elapsed().as_secs() < 20 { continue; }
+            }
+
+            // Probability decreases as idle time grows
+            let prob = if elapsed < 300 { 40 }          // 0-5min: 40% per check
+                  else if elapsed < 1800 { 15 }         // 5-30min: 15%
+                  else { 5 };                            // 30min-2h: 5%
+
+            let roll = (std::time::SystemTime::now()
+                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                .unwrap_or_default().as_nanos() as u64) % 100;
+
+            if roll >= prob { continue; }
+
+            let idx = (elapsed as usize / 13) % bubbles.len();
+            let s_idx = (elapsed as usize / 7) % actions.len();
+            let _ = proxy_poll.send_event(UiCommand::IdleAction {
+                action_state: actions[s_idx],
+                bubble: bubbles[idx],
+            });
+            last_action = Some(now);
         }
     });
 
     // Event loop
-    let mut last_state = None;
+    let mut last_state: Option<LightState> = None;
+    let mut running_dir = "running-right";
     let mut exit_at: Option<std::time::Instant> = None;
     let state_exit = Arc::clone(&state);
-    let webview = Some(webview);
+    let mut webview = Some(webview);
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_millis(20));
 
@@ -230,11 +241,14 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     if last_state == Some(state) { return; }
                     last_state = Some(state);
                     if let Some(ref wv) = webview {
-                        let _ = wv.evaluate_script(&format!("setState('{}',{})", state_name(state), duration_ms.unwrap_or(0)));
-                        // Bubble for non-idle state changes
+                        let sn = state_name(state);
+                        let _ = wv.evaluate_script(&format!("setHookState('{}')", sn));
+                        let _ = wv.evaluate_script(&format!("setState('{}',{})", sn, duration_ms.unwrap_or(0)));
                         if state != LightState::Idle {
                             let b = bubble_text(state);
-                            if !b.is_empty() { let _ = wv.evaluate_script(&format!("setBubble('{}',3000)", b)); }
+                            if !b.is_empty() { let _ = wv.evaluate_script(&format!("setBubble('{}',0,true)", b)); }
+                        } else {
+                            let _ = wv.evaluate_script("setBubble('',0,false)");
                         }
                     }
                 }
@@ -244,6 +258,12 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     let new_y = pos.y + dy;
                     window.set_outer_position(tao::dpi::PhysicalPosition::new(new_x, new_y));
                     save_position(new_x, new_y);
+                }
+                UiCommand::SwitchRunning => {
+                    if let Some(ref wv) = webview {
+                        running_dir = if running_dir == "running-right" { "running-left" } else { "running-right" };
+                        let _ = wv.evaluate_script(&format!("setState('{}',0)", running_dir));
+                    }
                 }
                 UiCommand::SwitchPet { slug } => {
                     if let Some(bytes) = crate::webview::load_pet_bytes(&slug) {
@@ -269,8 +289,8 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 }
                 UiCommand::IdleAction { action_state, bubble } => {
                     if let Some(ref wv) = webview {
-                        let _ = wv.evaluate_script(&format!("setState('{}',2000)", action_state));
-                        let _ = wv.evaluate_script(&format!("setBubble('{}',3000)", bubble));
+                        let _ = wv.evaluate_script(&format!("setState('{}',5000)", action_state));
+                        let _ = wv.evaluate_script(&format!("setBubble('{}',4000)", bubble));
                     }
                 }
                 UiCommand::Quit => *control_flow = ControlFlow::Exit,

@@ -83,12 +83,17 @@ function play(state) {{
 play('idle');
 
 // --- Bridge ---
+var STATE_LABELS = {{idle:'空闲','running-right':'工作中','running-left':'工作中',running:'工作中',waving:'挥手中',waiting:'等待确认',failed:'崩溃了',review:'踩坑了',jumping:'跳跳'}};
 window.setState = function(state, durationMs) {{
-  window.__stateLabel = state;
   play(state);
-  if (durationMs) setTimeout(function() {{ play('idle'); }}, durationMs);
+  if (durationMs) setTimeout(function() {{ play(window.__realState || 'idle'); }}, durationMs);
 }};
-window.__stateLabel = 'idle';
+window.setHookState = function(state) {{
+  window.__realState = state;
+  window.__stateLabel = STATE_LABELS[state] || state;
+}};
+window.__realState = 'idle';
+window.__stateLabel = '空闲';
 window.__sessions = 0;
 
 // --- Bubble ---
@@ -112,13 +117,13 @@ function positionBubble() {{
   bubbleEl.style.left = left+'px';
   bubbleEl.style.top = Math.max(2, rect.top-(bubbleEl.offsetHeight||22)-10)+'px';
 }}
-window.setBubble = function(text, durationMs) {{
+window.setBubble = function(text, durationMs, persist) {{
   var el = ensureBubble();
   bubbleTextEl.textContent = text || '';
   if (text) {{
     el.style.opacity = '1';
     positionBubble();
-    if (durationMs) setTimeout(function() {{ el.style.opacity = '0'; }}, durationMs);
+    if (!persist && durationMs) setTimeout(function() {{ el.style.opacity = '0'; }}, durationMs);
   }} else {{
     el.style.opacity = '0';
   }}
@@ -198,25 +203,28 @@ pet.addEventListener('contextmenu', function(e) {{
 
 // --- Single-click: random interaction ---
 var clicks = [
-  '戳我干嘛~',
-  '喵！',
-  '别闹，正忙着呢',
-  '嘿嘿，痒~',
-  '有什么事吗主人？',
-  '（打滚）',
-  '哼，不理你',
-  '再戳就咬你哦',
-  '嗯？叫我吗？',
-  '（伸懒腰）今天天气不错~',
+  '戳我干嘛~','喵！','别闹，正忙着呢','嘿嘿，痒~','有什么事吗主人？',
+  '（打滚）','哼，不理你','再戳就咬你哦','嗯？叫我吗？',
+  '（伸懒腰）今天天气不错~','（翻肚皮）摸摸~','盯——',
+  '干嘛啦','再戳我要生气了','（蹭蹭）','呼噜呼噜...',
+  '别摸了，代码要写不完了','（竖起耳朵）有Bug？','饿了...',
 ];
+var clickActions = ['waving','jumping','waiting','review'];
 pet.addEventListener('click', function(e) {{
   if (wasDrag) return;
+  if (window.__realState && window.__realState !== 'idle') return;
+  if (window.__clickBusy) return;
+  window.__clickBusy = true;
   var t = clicks[Math.floor(Math.random() * clicks.length)];
+  var a = clickActions[Math.floor(Math.random() * clickActions.length)];
   window.setBubble(t, 3000);
+  window.setState(a, 2000);
+  setTimeout(function() {{ window.__clickBusy = false; }}, 2500);
 }});
 
-// --- Double-click shows status ---
+// --- Double-click shows status (only when idle) ---
 pet.addEventListener('dblclick', function(e) {{
+  if (window.__realState && window.__realState !== 'idle') return;
   window.setBubble('会话: ' + (window.__sessions||0) + ' | 状态: ' + (window.__stateLabel||'idle'), 3000);
 }});
 
