@@ -32,23 +32,19 @@
 
 ## 快速开始
 
-### 作为 Claude Code 插件安装
+### Claude Code 插件安装（推荐）
 
-1. 从 [Releases](https://github.com/Jedeiah/agent-critter/releases) 下载对应平台的插件包
-2. 解压到本地目录
-3. 在 Claude Code 中添加本地 marketplace：
-   ```
-   /plugin marketplace add /path/to/解压目录
-   ```
-4. 安装插件：
-   ```
-   /plugin install agent-critter@agent-critter
-   ```
+```
+/plugin marketplace add github.com/Jedeiah/agent-critter
+/plugin install agent-critter@agent-critter
+```
+
+安装后自动启动桌宠。支持 GitHub 市场和本地 zip 两种方式，详见 [PLUGIN.md](PLUGIN.md)。
 
 ### 独立运行
 
 ```bash
-# 下载桌面宠物精灵（可选，不装也有默认精灵）
+# 下载社区精灵（可选）
 npx -y petdex install boba
 
 # 构建并运行
@@ -94,6 +90,18 @@ cargo build --release
 # 打包插件
 bash scripts/build-plugin.sh
 # Windows: build-plugin.bat
+```
+
+## 数据存储
+
+位置、缩放等配置保存在插件目录下的 `data/`：
+
+```
+插件目录/
+├── agent-critter
+├── data/
+│   ├── position    ← 窗口位置
+│   └── pet-scale   ← 缩放比例
 ```
 
 ## 技术栈
