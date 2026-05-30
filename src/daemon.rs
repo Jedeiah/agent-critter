@@ -335,9 +335,14 @@ pub fn start_detached_daemon(_port: u16) -> bool {
 pub fn fixed_port() -> u16 { FIXED_PORT }
 
 fn data_dir() -> std::path::PathBuf {
-    // Plugin install directory (where the binary lives)
-    std::env::current_exe().unwrap_or_default()
-        .parent().unwrap_or(std::path::Path::new("."))
+    // Prefer CLAUDE_PLUGIN_ROOT (set by Claude Code hooks), fallback to exe directory
+    std::env::var("CLAUDE_PLUGIN_ROOT")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            std::env::current_exe().unwrap_or_default()
+                .parent().unwrap_or(std::path::Path::new("."))
+                .to_path_buf()
+        })
         .join("data")
 }
 
