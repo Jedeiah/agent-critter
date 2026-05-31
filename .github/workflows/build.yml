@@ -38,7 +38,8 @@ jobs:
           chmod +x bin/agent-critter
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add -f bin/agent-critter
+          sed -E -i '' 's/"sha": "[a-f0-9]+"/"sha": "${{ github.sha }}"/' .claude-plugin/marketplace.json
+          git add -f bin/agent-critter .claude-plugin/marketplace.json
           git diff --staged --quiet || (git commit -m "ci: update macos binary" && git pull --rebase -X theirs origin main && git push)
 
       - name: Package plugin zip
@@ -88,6 +89,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add -f bin/agent-critter.exe
+          sed -E -i "s/\"sha\": \"[a-f0-9]+\"/\"sha\": \"${{ github.sha }}\"/" .claude-plugin/marketplace.json
+          git add -f bin/agent-critter.exe .claude-plugin/marketplace.json
           git diff --staged --quiet || (git commit -m "ci: update windows binary" && git pull --rebase -X theirs origin main && git push)
 
       - name: Package plugin zip
