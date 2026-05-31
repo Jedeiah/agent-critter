@@ -107,9 +107,11 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     let win_arc = Arc::new(Mutex::new(window));
     let window = win_arc.clone(); // keep name `window` for later
 
-    // Load pet
-    let (sheet, slug) = crate::webview::find_first_pet()
-        .unwrap_or_else(|| (include_bytes!("../assets/default_spritesheet.webp").to_vec(), "default".into()));
+    // Load pet: try saved slug first, fallback to first found, then default
+    let (sheet, slug) = load_pet_slug()
+        .and_then(|s| crate::webview::load_pet_bytes(&s).map(|b| (b, s)))
+        .unwrap_or_else(|| crate::webview::find_first_pet()
+            .unwrap_or_else(|| (include_bytes!("../assets/default_spritesheet.webp").to_vec(), "default".into())));
     let pets = list_pets();
     let pets_json = serde_json::to_string(&pets).unwrap_or_default();
     let html = crate::webview::build_page(&sheet, &slug, &pets_json);
@@ -312,6 +314,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 }
                 UiCommand::SwitchPet { slug } => {
                     if let Some(bytes) = crate::webview::load_pet_bytes(&slug) {
+                        save_pet_slug(&slug);
                         let pj = serde_json::to_string(&list_pets()).unwrap_or_default();
                         if let Some(ref wv) = webview {
                             let _ = wv.load_html(&crate::webview::build_page(&bytes, &slug, &pj));
@@ -348,6 +351,19 @@ pub fn start_detached_daemon(_port: u16) -> bool {
     cmd.spawn().is_ok()
 }
 pub fn fixed_port() -> u16 { FIXED_PORT }
+
+fn save_pet_slug(slug: &str) {
+    let dir = data_dir();
+    let _ = std::fs::create_dir_all(&dir);
+    let _ = std::fs::write(dir.join("pet-slug"), slug);
+}
+
+fn load_pet_slug() -> Option<String> {
+    std::fs::read_to_string(data_dir().join("pet-slug"))
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
 
 fn data_dir() -> std::path::PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
