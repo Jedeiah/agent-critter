@@ -12,6 +12,13 @@
 
 安装后自动启动桌宠。无需额外操作。
 
+也可以通过命令行一步完成：
+```
+/plugin marketplace add github.com/Jedeiah/agent-critter
+/plugin install agent-critter@agent-critter
+/reload-plugins
+```
+
 ### 方式二：本地安装
 
 1. 从 [Releases](https://github.com/Jedeiah/agent-critter/releases) 下载插件包并解压
