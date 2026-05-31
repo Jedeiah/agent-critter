@@ -48,6 +48,7 @@ pub enum UiCommand {
     SwitchRunning,
     SwitchPet { slug: String },
     IdleAction { action_state: &'static str, bubble: &'static str },
+    SessionCount(u32),
     Quit,
 }
 
@@ -220,7 +221,9 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
             std::thread::sleep(std::time::Duration::from_secs(1));
             tick += 1;
             let cur = state_poll.lock().unwrap().current_state();
+            let count = state_poll.lock().unwrap().session_count();
             let _ = proxy_poll.send_event(UiCommand::SetState { state: cur, duration_ms: None });
+            let _ = proxy_poll.send_event(UiCommand::SessionCount(count));
 
             if cur == LightState::Running && last_running_switch.elapsed().as_secs() >= 4 {
                 last_running_switch = std::time::Instant::now();
@@ -319,6 +322,11 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     if let Some(ref wv) = webview {
                         let _ = wv.evaluate_script(&format!("setState('{}',5000)", action_state));
                         let _ = wv.evaluate_script(&format!("setBubble('{}',4000)", bubble));
+                    }
+                }
+                UiCommand::SessionCount(n) => {
+                    if let Some(ref wv) = webview {
+                        let _ = wv.evaluate_script(&format!("window.__sessions={}", n));
                     }
                 }
                 UiCommand::Quit => *control_flow = ControlFlow::Exit,
