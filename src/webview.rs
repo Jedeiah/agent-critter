@@ -1,7 +1,7 @@
 /// Petdex-verbatim HTML/CSS/JS. Only changes:
 /// - spritesheet loaded as base64 data URI (instead of `url('spritesheet.webp')`)
 /// - setState / setBubble bridges added for Rust communication
-pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str) -> String {
+pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str, saved_scale: f64) -> String {
     let mime = if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
         "image/webp"
     } else {
@@ -99,6 +99,22 @@ window.setHookState = function(state) {{
 window.__realState = 'idle';
 window.__stateLabel = '空闲';
 window.__sessions = 0;
+window.__savedScale = {saved_scale};
+
+// Global scale function (used by menu and restore)
+window.applyScale = function(s) {{
+  window.__petScale = s;
+  document.body.style.zoom = s;
+  var sizeLabel = document.getElementById('size-label');
+  if (sizeLabel) sizeLabel.textContent = '🔍 大小 x'+s.toFixed(1);
+  var pw = Math.ceil(112 * s);
+  var ph = Math.ceil(pw / 192 * 208);
+  window.ipc.postMessage(JSON.stringify({{type:'resize',w:pw+40, h:ph+60}}));
+  window.ipc.postMessage(JSON.stringify({{type:'saveScale',scale:s}}));
+}};
+
+// Restore saved scale
+if (window.__savedScale) window.applyScale(window.__savedScale);
 
 // --- Bubble ---
 var bubbleEl = null, bubbleTextEl = null;
@@ -155,6 +171,7 @@ window.addEventListener('mousemove', function(e) {{
 window.addEventListener('mouseup', function() {{
   if (!dragging) return;
   dragging = false;
+  window.ipc.postMessage(JSON.stringify({{type:'savePos'}}));
 }});
 
 // --- Right-click pet menu ---
@@ -200,6 +217,7 @@ pet.addEventListener('contextmenu', function(e) {{
   // Size control
   window.__petScale = window.__petScale || 1.0;
   var sizeLabel = document.createElement('div');
+  sizeLabel.id = 'size-label';
   sizeLabel.textContent = '🔍 大小 x' + window.__petScale.toFixed(1);
   sizeLabel.style.cssText = 'padding:3px 8px;color:rgba(255,255,255,0.4);font-size:9px;text-align:center';
   menu.appendChild(sizeLabel);
@@ -209,22 +227,12 @@ pet.addEventListener('contextmenu', function(e) {{
   minus.textContent = '−'; minus.style.cssText = 'width:22px;text-align:center;color:#aaa;cursor:pointer;font-size:12px;border-radius:3px';
   minus.addEventListener('mouseenter', function(){{ minus.style.background='rgba(255,255,255,0.1)'; }});
   minus.addEventListener('mouseleave', function(){{ minus.style.background=''; }});
-  function applyScale(s) {{
-    window.__petScale = s;
-    document.body.style.zoom = s;
-    sizeLabel.textContent = '🔍 大小 x'+s.toFixed(1);
-    var pw = Math.ceil(112 * s); // pet visual width (7rem × 16px)
-    var ph = Math.ceil(pw / 192 * 208);
-    var ww = pw + 40; var wh = ph + 60;
-    window.ipc.postMessage(JSON.stringify({{type:'resize',w:ww, h:wh}}));
-    window.ipc.postMessage(JSON.stringify({{type:'saveScale',scale:s}}));
-  }}
   var plus = document.createElement('div');
   plus.textContent = '+'; plus.style.cssText = 'width:22px;text-align:center;color:#aaa;cursor:pointer;font-size:12px;border-radius:3px';
   plus.addEventListener('mouseenter', function(){{ plus.style.background='rgba(255,255,255,0.1)'; }});
   plus.addEventListener('mouseleave', function(){{ plus.style.background=''; }});
-  minus.addEventListener('click', function(e){{ e.stopPropagation(); applyScale(Math.max(0.5, window.__petScale - 0.1)); }});
-  plus.addEventListener('click', function(e){{ e.stopPropagation(); applyScale(Math.min(1.5, window.__petScale + 0.1)); }});
+  minus.addEventListener('click', function(e){{ e.stopPropagation(); window.applyScale(Math.max(0.5, window.__petScale - 0.1)); }});
+  plus.addEventListener('click', function(e){{ e.stopPropagation(); window.applyScale(Math.min(1.5, window.__petScale + 0.1)); }});
   sizeRow.appendChild(minus); sizeRow.appendChild(plus);
   menu.appendChild(sizeRow);
   var hr2 = document.createElement('hr');
@@ -278,7 +286,7 @@ pet.addEventListener('dblclick', function(e) {{
 
 
 </script>
-</body></html>"#, mime=mime, b64=b64, slug_json=slug_json, pets_json=pets_json)
+</body></html>"#, mime=mime, b64=b64, slug_json=slug_json, pets_json=pets_json, saved_scale=saved_scale)
 }
 
 pub fn build_empty_page(message: &str) -> String {
