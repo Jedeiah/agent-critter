@@ -15,10 +15,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -27,21 +25,13 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Build release
         run: cargo build --release
-
-      - name: Deploy binary to bin/
-        if: github.ref == 'refs/heads/main'
-        run: |
-          cp target/release/agent-critter bin/agent-critter
-          chmod +x bin/agent-critter
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          sed -E -i '' 's/"sha": "[a-f0-9]+"/"sha": "${{ github.sha }}"/' .claude-plugin/marketplace.json
-          git add -f bin/agent-critter .claude-plugin/marketplace.json
-          git diff --staged --quiet || (git commit -m "ci: update macos binary" && git pull --rebase -X theirs origin main && git push)
-
+      - name: Upload raw binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-critter-macos-bin
+          path: target/release/agent-critter
       - name: Package plugin zip
         run: |
           mkdir -p dist tmp
@@ -52,10 +42,9 @@ jobs:
           cp PLUGIN.md tmp/
           cp README.md tmp/
           mkdir -p tmp/bin
-          cp bin/agent-critter tmp/bin/
+          cp target/release/agent-critter tmp/bin/
           cd tmp && zip -r ../dist/agent-critter-plugin-macos.zip . && cd ..
-
-      - name: Upload artifact
+      - name: Upload zip artifact
         uses: actions/upload-artifact@v4
         with:
           name: agent-critter-macos
@@ -65,10 +54,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -77,22 +64,13 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Build release
         run: cargo build --release
-
-      - name: Deploy binary to bin/
-        if: github.ref == 'refs/heads/main'
-        shell: bash
-        run: |
-          cp target/release/agent-critter.exe bin/agent-critter.exe
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add -f bin/agent-critter.exe
-          sed -E -i "s/\"sha\": \"[a-f0-9]+\"/\"sha\": \"${{ github.sha }}\"/" .claude-plugin/marketplace.json
-          git add -f bin/agent-critter.exe .claude-plugin/marketplace.json
-          git diff --staged --quiet || (git commit -m "ci: update windows binary" && git pull --rebase -X theirs origin main && git push)
-
+      - name: Upload raw binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-critter-windows-bin
+          path: target/release/agent-critter.exe
       - name: Package plugin zip
         shell: pwsh
         run: |
@@ -105,14 +83,43 @@ jobs:
           Copy-Item PLUGIN.md tmp\
           Copy-Item README.md tmp\
           New-Item -ItemType Directory -Force tmp\bin
-          Copy-Item bin\agent-critter.exe tmp\bin\agent-critter.exe
+          Copy-Item target\release\agent-critter.exe tmp\bin\agent-critter.exe
           Compress-Archive -Path tmp\* -DestinationPath dist\agent-critter-plugin-windows.zip -Force
-
-      - name: Upload artifact
+      - name: Upload zip artifact
         uses: actions/upload-artifact@v4
         with:
           name: agent-critter-windows
           path: dist/agent-critter-plugin-windows.zip
+
+  deploy:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download macos binary
+        uses: actions/download-artifact@v4
+        with:
+          name: agent-critter-macos-bin
+          path: /tmp/macos
+      - name: Download windows binary
+        uses: actions/download-artifact@v4
+        with:
+          name: agent-critter-windows-bin
+          path: /tmp/windows
+      - name: Commit binaries to bin/
+        run: |
+          cp /tmp/macos/agent-critter bin/agent-critter
+          cp /tmp/windows/agent-critter.exe bin/agent-critter.exe
+          chmod +x bin/agent-critter
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -f bin/
+          git diff --staged --quiet || (git commit -m "ci: deploy binaries" && git pull --rebase -X theirs origin main && git push)
+          # Update SHA to point to this deploy commit
+          sed -i "s/\"sha\": \"[a-f0-9]*\"/\"sha\": \"$(git rev-parse HEAD)\"/" .claude-plugin/marketplace.json
+          git add .claude-plugin/marketplace.json
+          git diff --staged --quiet || (git commit -m "ci: update sha" && git pull --rebase -X theirs origin main && git push)
 
   release:
     needs: [build-macos, build-windows]
