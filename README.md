@@ -134,4 +134,4 @@ bash scripts/build-plugin.sh
 
 ## License
 
-MIT © [chj](https://github.com/Jedeiah)
+[MIT](LICENSE)
