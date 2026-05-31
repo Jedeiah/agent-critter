@@ -114,7 +114,9 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
             .unwrap_or_else(|| (include_bytes!("../assets/default_spritesheet.webp").to_vec(), "default".into())));
     let pets = list_pets();
     let pets_json = serde_json::to_string(&pets).unwrap_or_default();
-    let html = crate::webview::build_page(&sheet, &slug, &pets_json);
+    let saved_scale: f64 = std::fs::read_to_string(data_dir().join("pet-scale"))
+        .ok().and_then(|s| s.trim().parse().ok()).unwrap_or(1.0);
+    let html = crate::webview::build_page(&sheet, &slug, &pets_json, saved_scale);
 
     // WebView: IPC handler moves window directly, no EventLoop roundtrip
     let proxy_ipc = proxy.clone();
@@ -129,6 +131,12 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 }
                 if let Some(url) = v.get("url").and_then(|u| u.as_str()) {
                     let _ = std::process::Command::new("open").arg(url).spawn();
+                }
+                if v.get("type").and_then(|t| t.as_str()) == Some("savePos") {
+                    if let Ok(w) = drag_win.lock() {
+                        let pos = w.outer_position().unwrap_or_default();
+                        save_position(pos.x, pos.y);
+                    }
                 }
                 if v.get("act").and_then(|a| a.as_str()) == Some("1") {
                     #[cfg(target_os = "macos")]
@@ -200,8 +208,6 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     let saved_scale: f64 = std::fs::read_to_string(
         data_dir().join("pet-scale")
     ).ok().and_then(|s| s.trim().parse().ok()).unwrap_or(1.0);
-    let _ = webview.evaluate_script(&format!("window.__savedScale={};setTimeout(function(){{if(typeof applyScale==='function')applyScale(window.__savedScale)}},100)", saved_scale));
-
     // Polling + idle timer
     let state_poll = Arc::clone(&state);
     let proxy_poll = proxy.clone();
@@ -316,8 +322,10 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     if let Some(bytes) = crate::webview::load_pet_bytes(&slug) {
                         save_pet_slug(&slug);
                         let pj = serde_json::to_string(&list_pets()).unwrap_or_default();
+                        let saved_scale: f64 = std::fs::read_to_string(data_dir().join("pet-scale"))
+                            .ok().and_then(|s| s.trim().parse().ok()).unwrap_or(1.0);
                         if let Some(ref wv) = webview {
-                            let _ = wv.load_html(&crate::webview::build_page(&bytes, &slug, &pj));
+                            let _ = wv.load_html(&crate::webview::build_page(&bytes, &slug, &pj, saved_scale));
                         }
                     }
                 }
