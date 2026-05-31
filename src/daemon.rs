@@ -130,7 +130,10 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     let _ = proxy_ipc.send_event(UiCommand::SwitchPet { slug: slug.into() });
                 }
                 if let Some(url) = v.get("url").and_then(|u| u.as_str()) {
-                    let _ = std::process::Command::new("open").arg(url).spawn();
+                    // 只允许打开项目 GitHub 主页
+                    if url == "https://github.com/Jedeiah/agent-critter" {
+                        let _ = std::process::Command::new("open").arg(url).spawn();
+                    }
                 }
                 if v.get("type").and_then(|t| t.as_str()) == Some("savePos") {
                     if let Ok(w) = drag_win.lock() {
@@ -154,12 +157,12 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 }
                 if v.get("type").and_then(|t| t.as_str()) == Some("saveScale") {
                     if let Some(s) = v.get("scale").and_then(|s| s.as_f64()) {
-                        save_scale(s as f32);
+                        save_scale(s.clamp(0.5, 1.5) as f32);
                     }
                 }
                 if v.get("type").and_then(|t| t.as_str()) == Some("resize") {
-                    let w = v.get("w").and_then(|d| d.as_u64()).unwrap_or(140) as u32;
-                    let h = v.get("h").and_then(|d| d.as_u64()).unwrap_or(180) as u32;
+                    let w = v.get("w").and_then(|d| d.as_u64()).unwrap_or(140).clamp(80, 600) as u32;
+                    let h = v.get("h").and_then(|d| d.as_u64()).unwrap_or(180).clamp(80, 600) as u32;
                     if let Ok(win) = drag_win.lock() {
                         let _ = win.set_inner_size(tao::dpi::LogicalSize::new(w as f64, h as f64));
                     }
@@ -205,9 +208,6 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
       }}
     }
 
-    let saved_scale: f64 = std::fs::read_to_string(
-        data_dir().join("pet-scale")
-    ).ok().and_then(|s| s.trim().parse().ok()).unwrap_or(1.0);
     // Polling + idle timer
     let state_poll = Arc::clone(&state);
     let proxy_poll = proxy.clone();
@@ -228,8 +228,8 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         loop {
             std::thread::sleep(std::time::Duration::from_secs(1));
             tick += 1;
-            let cur = state_poll.lock().unwrap().current_state();
-            let count = state_poll.lock().unwrap().session_count();
+            let cur = state_poll.lock().unwrap_or_else(|e| e.into_inner()).current_state();
+            let count = state_poll.lock().unwrap_or_else(|e| e.into_inner()).session_count();
             let _ = proxy_poll.send_event(UiCommand::SetState { state: cur, duration_ms: None });
             let _ = proxy_poll.send_event(UiCommand::SessionCount(count));
 
@@ -285,7 +285,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         *control_flow = ControlFlow::WaitUntil(std::time::Instant::now() + std::time::Duration::from_millis(5));
 
         let (should_exit, count) = {
-            let s = state_exit.lock().unwrap();
+            let s = state_exit.lock().unwrap_or_else(|e| e.into_inner());
             (s.should_exit(), s.session_count())
         };
         if should_exit && count == 0 {

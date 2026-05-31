@@ -88,9 +88,16 @@ play('idle');
 
 // --- Bridge ---
 var STATE_LABELS = {{idle:'空闲','running-right':'工作中','running-left':'工作中',running:'工作中',waving:'挥手中',waiting:'等待确认',failed:'崩溃了',review:'踩坑了',jumping:'跳跳'}};
+window.__stateTimer = null;
 window.setState = function(state, durationMs) {{
   play(state);
-  if (durationMs) setTimeout(function() {{ play(window.__realState || 'idle'); }}, durationMs);
+  if (window.__stateTimer) clearTimeout(window.__stateTimer);
+  if (durationMs) {{
+    window.__stateTimer = setTimeout(function() {{
+      play(window.__realState || 'idle');
+      window.__stateTimer = null;
+    }}, durationMs);
+  }}
 }};
 window.setHookState = function(state) {{
   window.__realState = state;
@@ -104,7 +111,9 @@ window.__savedScale = {saved_scale};
 // Global scale function (used by menu and restore)
 window.applyScale = function(s) {{
   window.__petScale = s;
-  document.body.style.zoom = s;
+  // 跨平台兼容：用宽度缩放替代 document.body.style.zoom（WKWebView 不支持）
+  var baseW = 112; // 7rem ≈ 112px
+  pet.style.width = Math.ceil(baseW * s) + 'px';
   var sizeLabel = document.getElementById('size-label');
   if (sizeLabel) sizeLabel.textContent = '🔍 大小 x'+s.toFixed(1);
   var pw = Math.ceil(112 * s);
@@ -298,6 +307,10 @@ p{{color:rgba(255,255,255,0.6);font-size:9px;text-align:center;white-space:pre-l
 }
 
 pub fn load_pet_bytes(slug: &str) -> Option<Vec<u8>> {
+    // 安全：拒绝路径遍历
+    if slug.contains("..") || slug.contains('/') || slug.contains('\\') {
+        return None;
+    }
     let home = std::env::var("HOME").ok()?;
     for base in &[format!("{}/.codex/pets", home), format!("{}/.petdex/pets", home)] {
         for ext in &["webp", "png"] {
