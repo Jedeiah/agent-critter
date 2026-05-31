@@ -11,7 +11,7 @@
       "source": {
         "source": "url",
         "url": "https://github.com/Jedeiah/agent-critter.git",
-        "sha": "f0ef1e238568a48b68fc71c01f12f30ebf15e621"
+        "sha": "$(git rev-parse HEAD)"
       },
       "homepage": "https://github.com/Jedeiah/agent-critter"
     }
