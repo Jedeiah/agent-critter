@@ -180,6 +180,13 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
             }
         })
         .build(&*window.lock().unwrap()).expect("webview");
+
+    // Windows: WebView2 需要父窗口 visible 后才能正确初始化透明背景
+    #[cfg(target_os = "windows")]
+    window.lock().unwrap().set_visible(true);
+
+    // 其他平台在 WebView build 后再显示窗口
+    #[cfg(not(target_os = "windows"))]
     { let w = window.lock().unwrap(); w.set_visible(true); }
 
     // macOS: WKWebView drawsBackground = NO (must be AFTER webview build)
