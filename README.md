@@ -10,13 +10,9 @@
 
 ## 效果预览
 
-```
-   ┌──────────────┐
-   │ （桌宠动画）  │  ← 干活时跑步，空闲时呼吸
-   │  "收到！"    │  ← 状态气泡
-   └──────────────┘
-        ↑ 透明窗口，永远置顶，可拖拽移动
-```
+| 待机 | 工作中 | 放大 |
+|------|--------|------|
+| ![待机](idle.png) | ![工作中](working.png) | ![放大](zoomed.png) |
 
 ## 特性
 
@@ -40,7 +36,14 @@
 4. 回到 **Plugins**，找到 `agent-critter`，选择 **Install**
 5. 输入 `/reload-plugins` 重载插件
 
-安装后自动启动桌宠。支持 GitHub 市场和本地 zip 两种方式，详见 [PLUGIN.md](PLUGIN.md)。
+安装后自动启动桌宠。
+
+或命令行：
+```
+/plugin marketplace add github.com/Jedeiah/agent-critter
+/plugin install agent-critter@agent-critter
+/reload-plugins
+```
 
 ### 独立运行
 
