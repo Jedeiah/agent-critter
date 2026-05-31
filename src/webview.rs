@@ -111,9 +111,8 @@ window.__savedScale = {saved_scale};
 // Global scale function (used by menu and restore)
 window.applyScale = function(s) {{
   window.__petScale = s;
-  // 跨平台兼容：用宽度缩放替代 document.body.style.zoom（WKWebView 不支持）
-  var baseW = 112; // 7rem ≈ 112px
-  pet.style.width = Math.ceil(baseW * s) + 'px';
+  // 缩放整个页面（zoom 在 WKWebView 和 WebView2 均支持）
+  document.body.style.zoom = s;
   var sizeLabel = document.getElementById('size-label');
   if (sizeLabel) sizeLabel.textContent = '🔍 大小 x'+s.toFixed(1);
   var pw = Math.ceil(112 * s);
