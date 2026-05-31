@@ -1,5 +1,6 @@
 {
   "name": "agent-critter",
+  "description": "Agent Critter — Claude Code 桌面宠物插件，兼容 Petdex 2700+ 精灵",
   "owner": {
     "name": "chj"
   },
@@ -9,7 +10,8 @@
       "description": "一只桌宠小精灵，实时展示 Claude Code 工作状态。支持 Petdex 社区 2700+ 精灵。",
       "source": {
         "source": "url",
-        "url": "https://github.com/Jedeiah/agent-critter.git"
+        "url": "https://github.com/Jedeiah/agent-critter.git",
+        "sha": "f0ef1e238568a48b68fc71c01f12f30ebf15e621"
       },
       "homepage": "https://github.com/Jedeiah/agent-critter"
     }
