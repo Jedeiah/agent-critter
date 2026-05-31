@@ -4,6 +4,8 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Petdex](https://img.shields.io/badge/pets-2700%2B-ff69b4.svg)](https://petdex.crafter.run)
 
+> **⚠️ 平台说明：** 当前仅在 macOS 上经过完整测试与调试。Windows 版本可编译，但桌面集成（透明窗口、Hook IPC、拖拽缩放）尚未验证。
+
 一只桌宠小精灵，实时展示你的 AI 编程助手（Claude Code / Codex / Gemini CLI）的工作状态。支持 [Petdex](https://petdex.crafter.run) 社区 2700+ 精灵，一键切换。透明窗口、可拖拽、可缩放。
 
 > 参考了 [Petdex](https://github.com/crafter-station/petdex) 的精灵格式和 HTML 模板设计。
@@ -87,6 +89,8 @@ Claude Code Hooks → TCP(7890) → StateMachine → evaluate_script() → WKWeb
 
 ## 从源码构建
 
+> **注意**：项目目前以 macOS 为主要开发和测试平台。Windows 构建能够正常编译，但桌面集成（透明窗口、拖拽、缩放）尚未在 Windows 上验证，欢迎参与测试贡献。
+
 ```bash
 # 构建
 cargo build --release
@@ -110,7 +114,7 @@ bash scripts/build-plugin.sh
 
 | 层 | 技术 |
 |----|------|
-| 窗口 | wry + tao (Rust, WKWebView) |
+| 窗口 | wry + tao (macOS WKWebView; Windows WebView2 待验证) |
 | 渲染 | CSS background-image + JS setTimeout 逐帧 |
 | 状态机 | Rust StateMachine (多会话优先级) |
 | Hook | TCP JSON (Claude Code plugin hooks) |

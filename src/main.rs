@@ -15,11 +15,15 @@ fn read_stdin_and_send(port: u16) {
     }
 
     // Try sending; if daemon not running, start it and poll up to ~2s
+    let mut daemon_started = false;
     for _ in 0..20 {
         match send_raw_json(port, &stdin_bytes) {
             Ok(()) => return,
             Err(ref e) if e.kind() == io::ErrorKind::ConnectionRefused => {
-                start_detached_daemon(port);
+                if !daemon_started {
+                    start_detached_daemon(port);
+                    daemon_started = true;
+                }
                 std::thread::sleep(Duration::from_millis(100));
             }
             Err(_) => return,
@@ -55,11 +59,15 @@ fn main() {
         "idle"
     };
 
+    let mut daemon_started = false;
     for _ in 0..20 {
         match send_event_str(port, event, &session_id) {
             Ok(()) => return,
             Err(ref e) if e.kind() == io::ErrorKind::ConnectionRefused => {
-                start_detached_daemon(port);
+                if !daemon_started {
+                    start_detached_daemon(port);
+                    daemon_started = true;
+                }
                 std::thread::sleep(Duration::from_millis(100));
             }
             Err(_) => return,

@@ -45,7 +45,7 @@ fn handle_client(stream: TcpStream, state: Arc<Mutex<StateMachine>>) {
         let payload: HookPayload = match serde_json::from_str(trimmed) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("JSON parse error: {} (input: {:?})", e, trimmed);
+                eprintln!("JSON parse error: {}", e);
                 continue;
             }
         };
