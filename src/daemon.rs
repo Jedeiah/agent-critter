@@ -122,14 +122,8 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     let proxy_ipc = proxy.clone();
     let drag_win = win_arc.clone();
 
-    // Windows: WebView2 需要先显示父窗口，且不支持 with_transparent（导致 E_INVALIDARG）
-    #[cfg(target_os = "windows")]
-    { let w = window.lock().unwrap(); w.set_visible(true); }
-
-    let mut webview_builder = WebViewBuilder::new().with_html(&html);
-    #[cfg(not(target_os = "windows"))]
-    { webview_builder = webview_builder.with_transparent(true); }
-    let webview = webview_builder
+    let webview = WebViewBuilder::new()
+        .with_transparent(true).with_html(&html)
         .with_ipc_handler(move |msg| {
             if msg.body() == "quit" { std::process::exit(0); }
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(msg.body()) {
@@ -187,9 +181,6 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
             }
         })
         .build(&*window.lock().unwrap()).expect("webview");
-
-    // 非 Windows：WebView build 后显示窗口
-    #[cfg(not(target_os = "windows"))]
     { let w = window.lock().unwrap(); w.set_visible(true); }
 
     // macOS: WKWebView drawsBackground = NO (must be AFTER webview build)
