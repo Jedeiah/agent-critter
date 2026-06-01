@@ -18,14 +18,15 @@
 
 ## 特性
 
-- 🎨 **Petdex 兼容**：支持 [2700+ 社区精灵](https://petdex.crafter.run)，可上传图片自定义，一键 `npx petdex install`
+- 🎨 **Petdex 兼容**：支持 [2700+ 社区精灵](https://petdex.crafter.run)，右键菜单直接搜索安装或随机
 - 🔄 **实时状态同步**：根据 AI 助手状态自动切换动画（空闲/工作中/报错/确认）
 - 🎯 **多会话支持**：多个 Agent 同时运行时取最高优先级状态
-- 🖱️ **交互**：单击互动、双击看状态、右键切换宠物+缩放
-- 📐 **缩放**：0.5x ~ 1.5x 可调，窗口自动跟随
-- 💬 **气泡**：Hook 状态气泡（持久）/ 闲时气泡（自动消失）
+- 🖱️ **右键菜单**：切换宠物、搜索安装、随机一只、缩放、打开市场、退出
+- 📐 **缩放**：0.5x ~ 1.5x 可调，窗口自动跟随，菜单全屏弹框
+- 💬 **气泡**：Hook 状态气泡（持久）/ 闲时气泡（自动消失）/ 安装进度反馈
 - 💤 **闲时动作**：30s 后概率触发互动，2 小时后休眠
 - 🪟 **原生透明窗口**：macOS WKWebView / Windows WebView2，无黑底无闪烁
+- 🌐 **内置宠物市场**：输入名字或随机，自动从 Petdex API 下载安装，无需 Node.js
 - 📦 **轻量**：~3MB 二进制，无需额外运行时
 
 ## 快速开始
@@ -79,43 +80,56 @@ Claude Code Hooks → TCP(7890) → StateMachine → evaluate_script() → WebVi
 
 ## 安装宠物精灵
 
-在 [Petdex](https://petdex.crafter.run) 浏览 2700+ 免费精灵，选好后安装到本地。
+在 [Petdex](https://petdex.crafter.run/zh/collections) 浏览 2700+ 免费精灵，选好后安装到本地。
 
-### 方式一：有 Node.js（一行命令）
+### 方式一：右键菜单直接安装（推荐，无需 Node.js）
+
+右键桌宠 → 打开菜单（分上下两部分，点击可放大）：
+
+| 切换宠物 / 市场 / 安装 | 大小 / GitHub / 退出 |
+|------------------------|---------------------|
+| ![菜单1](菜单1.png) | ![菜单2](菜单2.png) |
+
+- **📥装**：输入宠物名字后点击，自动从 Petdex API 下载并切换到该宠物
+- **🎲随机**：从 2700+ 宠物中随机选一个下载安装
+- **🌐 浏览市场找名字**：打开 Petdex 合集页面，浏览宠物图及其名字
+- 安装完成后气泡会显示 **"✅ 已安装 xxx"** 并自动切换
+- 如果已安装，气泡显示 **"✅ xxx 已存在"** 并直接切换过去
+- 输入自动转小写、空格变 `-`，支持粘贴
+
+> 名字支持 `slug`（如 `boba`）和 `displayName`（如 `Boba`），不区分大小写。
+
+### 方式二：命令行（有 Node.js）
 
 ```bash
 npx -y petdex install boba
 ```
 
-替换 `boba` 为任意精灵名字即可。安装后右键桌宠 → 切换宠物。
+替换 `boba` 为任意精灵名字即可。安装后右键菜单可见。
 
-### 方式二：没有 Node.js（手动下载）
+### 方式三：手动下载
 
-1. 打开 [petdex.crafter.run](https://petdex.crafter.run)
+1. 打开 [petdex.crafter.run/zh/collections](https://petdex.crafter.run/zh/collections)
 2. 找到喜欢的精灵，点击下载 `spritesheet.webp`
-3. 在以下任意位置创建文件夹，把下载的文件放进去：
-
-   - **macOS / Linux：**
-     ```
-     ~/.codex/pets/<宠物名字>/spritesheet.webp
-     ```
-   - **Windows：**
-     ```
-     %USERPROFILE%\.codex\pets\<宠物名字>\spritesheet.webp
-     ```
-
-   `<宠物名字>` 可以随便起，比如 `boba`、`my-cat`。
-
-4. 右键桌宠 → 菜单里就能看到并切换了
-
-### 已安装的宠物在哪
+3. 放入以下路径：
 
 | 系统 | 路径 |
 |------|------|
 | macOS / Linux | `~/.codex/pets/<名字>/spritesheet.webp` |
 | Windows | `%USERPROFILE%\.codex\pets\<名字>\spritesheet.webp` |
 
-> 也支持 `~/.petdex/pets/`（兼容旧版 Petdex 路径）。
+4. 右键菜单即可切换
+
+### 已安装的宠物在哪
+
+桌宠会扫描以下目录：
+
+| 目录 | 说明 |
+|------|------|
+| `~/.codex/pets/` | Codex CLI 宠物目录（主目录） |
+| `~/.petdex/pets/` | 旧版 Petdex 兼容目录 |
+
+每个宠物一个文件夹，里面放 `spritesheet.webp`（或 `.png`）即可。
 
 ## 从源码构建
 
@@ -153,10 +167,10 @@ bash scripts/build-plugin.sh
 正在计划中的功能：
 
 - [x] Claude Code 实时状态同步
+- [x] 🌐 **精灵市场内置** — 右键菜单搜索安装 / 随机一只，无需 Node.js
 - [ ] 适配更多 Agent — **Codex CLI** / **OpenCode** / **Gemini CLI**
 - [ ] 更多 Hook 事件处理（Subagent、Compact 等）
 - [ ] 🎙️ **宠物语音** — 状态切换时播放音效或 TTS 语音
-- [ ] 精灵市场内置（直接浏览和安装 Petdex 社区精灵）
 - [ ] 主题系统 — 自定义 UI 配色
 
 ## 致谢
