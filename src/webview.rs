@@ -1,13 +1,5 @@
-/// Petdex-verbatim HTML/CSS/JS. Only changes:
-/// - spritesheet loaded as base64 data URI (instead of `url('spritesheet.webp')`)
-/// - setState / setBubble bridges added for Rust communication
-pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str, saved_scale: f64) -> String {
-    let mime = if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
-        "image/webp"
-    } else {
-        "image/png"
-    };
-    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes);
+/// Petdex-verbatim HTML/CSS/JS.
+pub fn build_page(current_slug: &str, pets_json: &str, saved_scale: f64) -> String {
     let slug_json = serde_json::to_string(current_slug).unwrap_or_else(|_| "\"\"".into());
 
     format!(r#"<!DOCTYPE html>
@@ -23,7 +15,7 @@ pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str, saved_scale
     aspect-ratio: 192 / 208;
     width: 7rem;
     image-rendering: pixelated;
-    background-image: url('data:{mime};base64,{b64}');
+    background-image: url('/sprite');
     background-repeat: no-repeat;
     background-size: 800% 900%;
     background-position: 0% 0%;
@@ -294,7 +286,7 @@ pet.addEventListener('dblclick', function(e) {{
 
 
 </script>
-</body></html>"#, mime=mime, b64=b64, slug_json=slug_json, pets_json=pets_json, saved_scale=saved_scale)
+</body></html>"#, slug_json=slug_json, pets_json=pets_json, saved_scale=saved_scale)
 }
 
 pub fn build_empty_page(message: &str) -> String {

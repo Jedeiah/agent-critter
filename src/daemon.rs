@@ -116,14 +116,44 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     let pets_json = serde_json::to_string(&pets).unwrap_or_default();
     let saved_scale: f64 = std::fs::read_to_string(data_dir().join("pet-scale"))
         .ok().and_then(|s| s.trim().parse().ok()).unwrap_or(1.0);
-    let html = crate::webview::build_page(&sheet, &slug, &pets_json, saved_scale);
+    let html = crate::webview::build_page(&slug, &pets_json, saved_scale);
+
+    // Custom protocol: / 返回 HTML，/sprite 返回精灵图
+    let html_bytes: Vec<u8> = html.into_bytes();
+    let sprite_data: Arc<Mutex<(Vec<u8>, &'static str)>> = Arc::new(Mutex::new(
+        if sheet.len() >= 12 && &sheet[0..4] == b"RIFF" && &sheet[8..12] == b"WEBP" {
+            (sheet, "image/webp")
+        } else {
+            (sheet, "image/png")
+        }
+    ));
+    let sprite_serve = Arc::clone(&sprite_data);
 
     // WebView: IPC handler moves window directly, no EventLoop roundtrip
     let proxy_ipc = proxy.clone();
     let drag_win = win_arc.clone();
 
     let webview = WebViewBuilder::new()
-        .with_transparent(true).with_html(&html)
+        .with_transparent(true)
+        .with_custom_protocol("pet".into(), move |_id, request| {
+            let path = request.uri().path();
+            if path == "/sprite" {
+                let guard = sprite_serve.lock().unwrap();
+                let mime = guard.1;
+                let bytes = guard.0.clone();
+                wry::http::Response::builder()
+                    .header("Content-Type", mime)
+                    .header("Cache-Control", "no-store")
+                    .body(std::borrow::Cow::from(bytes))
+                    .unwrap()
+            } else {
+                wry::http::Response::builder()
+                    .header("Content-Type", "text/html; charset=utf-8")
+                    .body(std::borrow::Cow::from(html_bytes.clone()))
+                    .unwrap()
+            }
+        })
+        .with_url("pet://localhost/")
         .with_ipc_handler(move |msg| {
             if msg.body() == "quit" { std::process::exit(0); }
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(msg.body()) {
@@ -173,9 +203,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     let dy = v.get("dy").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
                     if let Ok(w) = drag_win.lock() {
                         let pos = w.outer_position().unwrap_or_default();
-                        let new_x = pos.x + dx; let new_y = pos.y + dy;
-                        w.set_outer_position(tao::dpi::PhysicalPosition::new(new_x, new_y));
-                        save_position(new_x, new_y);
+                        w.set_outer_position(tao::dpi::PhysicalPosition::new(pos.x + dx, pos.y + dy));
                     }
                 }
             }
@@ -322,11 +350,21 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 UiCommand::SwitchPet { slug } => {
                     if let Some(bytes) = crate::webview::load_pet_bytes(&slug) {
                         save_pet_slug(&slug);
-                        let pj = serde_json::to_string(&list_pets()).unwrap_or_default();
-                        let saved_scale: f64 = std::fs::read_to_string(data_dir().join("pet-scale"))
-                            .ok().and_then(|s| s.trim().parse().ok()).unwrap_or(1.0);
+                        let mime = if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+                            "image/webp"
+                        } else {
+                            "image/png"
+                        };
+                        *sprite_data.lock().unwrap() = (bytes, mime);
                         if let Some(ref wv) = webview {
-                            let _ = wv.load_html(&crate::webview::build_page(&bytes, &slug, &pj, saved_scale));
+                            let slug_js = serde_json::to_string(&slug).unwrap_or_else(|_| "\"\"".into());
+                            let bust = std::time::SystemTime::now()
+                                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                                .unwrap_or_default().as_millis();
+                            let _ = wv.evaluate_script(&format!(
+                                "CURRENT_SLUG={s};document.getElementById('pet').style.backgroundImage=\"url('/sprite?t={t}')\";",
+                                s=slug_js, t=bust
+                            ));
                         }
                     }
                 }

@@ -4,9 +4,9 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Petdex](https://img.shields.io/badge/pets-2700%2B-ff69b4.svg)](https://petdex.crafter.run)
 
-> **⚠️ 平台说明：** 当前仅在 macOS 上经过完整测试与调试。Windows 版本可编译，但桌面集成（透明窗口、Hook IPC、拖拽缩放）尚未验证。
+> **✅ 跨平台支持：** 已通过 macOS 和 Windows 11 测试。
 
-一只桌宠小精灵，实时展示你的 AI 编程助手（Claude Code / Codex / Gemini CLI）的工作状态。支持 [Petdex](https://petdex.crafter.run) 社区 2700+ 精灵，一键切换。透明窗口、可拖拽、可缩放。
+**Claude Code 桌宠插件** —— 一只实时展示你的 AI 编程助手工作状态的小精灵。支持 [Petdex](https://petdex.crafter.run) 社区 2700+ 精灵，一键切换。透明窗口、可拖拽、可缩放。
 
 > 参考了 [Petdex](https://github.com/crafter-station/petdex) 的精灵格式和 HTML 模板设计。
 
@@ -25,7 +25,7 @@
 - 📐 **缩放**：0.5x ~ 1.5x 可调，窗口自动跟随
 - 💬 **气泡**：Hook 状态气泡（持久）/ 闲时气泡（自动消失）
 - 💤 **闲时动作**：30s 后概率触发互动，2 小时后休眠
-- 🪟 **原生透明窗口**：wry + WKWebView，无黑底无闪烁
+- 🪟 **原生透明窗口**：macOS WKWebView / Windows WebView2，无黑底无闪烁
 - 📦 **轻量**：~3MB 二进制，无需额外运行时
 
 ## 快速开始
@@ -50,12 +50,11 @@
 ### 独立运行
 
 ```bash
-# 下载社区精灵（可选）
-npx -y petdex install boba
-
 # 构建并运行
 cargo run -- --daemon
 ```
+
+> 也可直接下载 Release 的二进制，解压后运行 `bin/agent-critter --daemon`。
 
 ## 状态映射
 
@@ -70,26 +69,55 @@ cargo run -- --daemon
 ## 架构
 
 ```
-Claude Code Hooks → TCP(7890) → StateMachine → evaluate_script() → WKWebView
+Claude Code Hooks → TCP(7890) → StateMachine → evaluate_script() → WebView
      (JSON)                      (多会话)         (瞬时推JS)         (CSS动画)
 ```
 
 - **Rust daemon**：状态机 + TCP 服务器 + wry/tao 透明窗口
 - **HTML/CSS/JS**：Petdex 格式精灵渲染（8×9 网格，JS 逐帧播）
-- **WebView**：wry (macOS WKWebView)，透明 + 置顶 + 可拖拽
+- **WebView**：wry (macOS WKWebView / Windows WebView2)，透明 + 置顶 + 可拖拽
 
-## 精灵格式
+## 安装宠物精灵
 
-兼容 Petdex 社区格式：单张 8 列 × 9 行 spritesheet（webp/png），每行一个动作。
+在 [Petdex](https://petdex.crafter.run) 浏览 2700+ 免费精灵，选好后安装到本地。
 
+### 方式一：有 Node.js（一行命令）
+
+```bash
+npx -y petdex install boba
 ```
-安装: npx petdex install <name>  →  ~/.codex/pets/<name>/spritesheet.webp
-使用: 右键 → 宠物列表切换
-```
+
+替换 `boba` 为任意精灵名字即可。安装后右键桌宠 → 切换宠物。
+
+### 方式二：没有 Node.js（手动下载）
+
+1. 打开 [petdex.crafter.run](https://petdex.crafter.run)
+2. 找到喜欢的精灵，点击下载 `spritesheet.webp`
+3. 在以下任意位置创建文件夹，把下载的文件放进去：
+
+   - **macOS / Linux：**
+     ```
+     ~/.codex/pets/<宠物名字>/spritesheet.webp
+     ```
+   - **Windows：**
+     ```
+     %USERPROFILE%\.codex\pets\<宠物名字>\spritesheet.webp
+     ```
+
+   `<宠物名字>` 可以随便起，比如 `boba`、`my-cat`。
+
+4. 右键桌宠 → 菜单里就能看到并切换了
+
+### 已安装的宠物在哪
+
+| 系统 | 路径 |
+|------|------|
+| macOS / Linux | `~/.codex/pets/<名字>/spritesheet.webp` |
+| Windows | `%USERPROFILE%\.codex\pets\<名字>\spritesheet.webp` |
+
+> 也支持 `~/.petdex/pets/`（兼容旧版 Petdex 路径）。
 
 ## 从源码构建
-
-> **注意**：项目目前以 macOS 为主要开发和测试平台。Windows 构建能够正常编译，但桌面集成（透明窗口、拖拽、缩放）尚未在 Windows 上验证，欢迎参与测试贡献。
 
 ```bash
 # 构建
@@ -114,7 +142,7 @@ bash scripts/build-plugin.sh
 
 | 层 | 技术 |
 |----|------|
-| 窗口 | wry + tao (macOS WKWebView; Windows WebView2 待验证) |
+| 窗口 | wry + tao (macOS WKWebView / Windows WebView2) |
 | 渲染 | CSS background-image + JS setTimeout 逐帧 |
 | 状态机 | Rust StateMachine (多会话优先级) |
 | Hook | TCP JSON (Claude Code plugin hooks) |
