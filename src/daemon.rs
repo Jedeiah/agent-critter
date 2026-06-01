@@ -229,12 +229,6 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                         let _ = win.set_inner_size(tao::dpi::LogicalSize::new(w as f64, h as f64));
                     }
                 }
-                if v.get("type").and_then(|t| t.as_str()) == Some("dragStart") {
-                    if let Ok(w) = drag_win.lock() {
-                        let pos = w.outer_position().unwrap_or_default();
-                        *drag_origin_ipc.lock().unwrap() = (pos.x, pos.y);
-                    }
-                }
                 if v.get("type").and_then(|t| t.as_str()) == Some("move") {
                     let dx = v.get("dx").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
                     let dy = v.get("dy").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
