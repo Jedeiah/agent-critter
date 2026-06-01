@@ -203,12 +203,16 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     #[cfg(target_os = "macos")]
                     if let Ok(w) = drag_win.lock() {
                         use tao::platform::macos::WindowExtMacOS;
-                        let ns = w.ns_window() as *mut objc::runtime::Object;
+                        let ns = w.ns_window();
                         if !ns.is_null() {
                             unsafe {
-                                let app: *mut objc::runtime::Object = objc::msg_send![objc::class!(NSApplication), sharedApplication];
-                                let _: () = objc::msg_send![app, activateIgnoringOtherApps: true];
-                                let _: () = objc::msg_send![ns, makeKeyAndOrderFront: std::ptr::null::<objc::runtime::Object>()];
+                                let ns_obj = ns as *mut objc::runtime::Object;
+                                let cls: *mut objc::runtime::Object = objc::msg_send![ns_obj, class];
+                                if !cls.is_null() {
+                                    let app: *mut objc::runtime::Object = objc::msg_send![objc::class!(NSApplication), sharedApplication];
+                                    let _: () = objc::msg_send![app, activateIgnoringOtherApps: true];
+                                    let _: () = objc::msg_send![ns_obj, makeKeyAndOrderFront: std::ptr::null::<objc::runtime::Object>()];
+                                }
                             }
                         }
                     }
@@ -236,7 +240,6 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
             }
         })
         .build(&*window.lock().unwrap()).expect("webview");
-    { let w = window.lock().unwrap(); w.set_visible(true); }
 
     // macOS: WKWebView drawsBackground = NO (must be AFTER webview build)
     #[cfg(target_os = "macos")]
@@ -253,16 +256,21 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         let cv: *mut objc::runtime::Object = objc::msg_send![win, contentView];
         if !cv.is_null() {
           let subs: *mut objc::runtime::Object = objc::msg_send![cv, subviews];
+          if !subs.is_null() {
           let n: usize = objc::msg_send![subs, count];
           for i in 0..n {
             let v: *mut objc::runtime::Object = objc::msg_send![subs, objectAtIndex: i];
+            if v.is_null() { continue; }
             let no: *mut objc::runtime::Object = objc::msg_send![objc::class!(NSNumber), numberWithBool: false];
             let k: *mut objc::runtime::Object = objc::msg_send![objc::class!(NSString), stringWithUTF8String: b"drawsBackground\0".as_ptr() as *const i8];
             let _: () = objc::msg_send![v, setValue: no forKey: k];
           }
+          }
         }
       }}
     }
+
+    { let w = window.lock().unwrap(); w.set_visible(true); }
 
     // Polling + idle timer
     let state_poll = Arc::clone(&state);
@@ -315,9 +323,12 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                   else if elapsed < 1800 { 15 }         // 5-30min: 15%
                   else { 5 };                            // 30min-2h: 5%
 
-            let roll = (std::time::SystemTime::now()
-                .duration_since(std::time::SystemTime::UNIX_EPOCH)
-                .unwrap_or_default().as_nanos() as u64) % 100;
+            let roll = {
+                use std::hash::{BuildHasher, Hasher};
+                let mut h = std::collections::hash_map::RandomState::new().build_hasher();
+                h.write_u64(tick);
+                h.finish() % 100
+            };
 
             if roll >= prob { continue; }
 

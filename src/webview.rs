@@ -150,23 +150,22 @@ window.setBubble = function(text, durationMs, persist) {{
   }}
 }};
 
-// --- Drag: mousedown anywhere on window → move window ---
-var dragging = false, wasDrag = false, startX = 0, startY = 0, lastMove = 0;
+// --- Drag: mousedown anywhere → absolute positioning (避免增量累积误差) ---
+var dragging = false, wasDrag = false, dragOriginX = 0, dragOriginY = 0, lastMove = 0;
 document.body.addEventListener('mousedown', function(e) {{
   if (e.button !== 0) return;
-  if (e.target === pet || pet.contains(e.target)) return; // skip drag on pet
   dragging = true; wasDrag = false;
-  startX = e.screenX; startY = e.screenY; lastMove = 0;
+  dragOriginX = e.screenX; dragOriginY = e.screenY; lastMove = 0;
+  window.ipc.postMessage(JSON.stringify({{type:'dragStart'}}));
 }});
 window.addEventListener('mousemove', function(e) {{
   if (!dragging) return;
   var now = Date.now();
-  if (now - lastMove < 16) return; // throttle to ~60fps
+  if (now - lastMove < 16) return;
   lastMove = now;
-  var dx = e.screenX - startX, dy = e.screenY - startY;
+  var dx = e.screenX - dragOriginX, dy = e.screenY - dragOriginY;
   if (Math.abs(dx) > 2 || Math.abs(dy) > 2) wasDrag = true;
   window.ipc.postMessage(JSON.stringify({{type:'move',dx:dx,dy:dy}}));
-  startX = e.screenX; startY = e.screenY;
 }});
 window.addEventListener('mouseup', function() {{
   if (!dragging) return;
