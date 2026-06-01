@@ -1,13 +1,5 @@
-/// Petdex-verbatim HTML/CSS/JS. Only changes:
-/// - spritesheet loaded as base64 data URI (instead of `url('spritesheet.webp')`)
-/// - setState / setBubble bridges added for Rust communication
-pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str, saved_scale: f64) -> String {
-    let mime = if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
-        "image/webp"
-    } else {
-        "image/png"
-    };
-    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes);
+/// Petdex-verbatim HTML/CSS/JS.
+pub fn build_page(current_slug: &str, pets_json: &str, saved_scale: f64) -> String {
     let slug_json = serde_json::to_string(current_slug).unwrap_or_else(|_| "\"\"".into());
 
     format!(r#"<!DOCTYPE html>
@@ -23,7 +15,7 @@ pub fn build_page(bytes: &[u8], current_slug: &str, pets_json: &str, saved_scale
     aspect-ratio: 192 / 208;
     width: 7rem;
     image-rendering: pixelated;
-    background-image: url('data:{mime};base64,{b64}');
+    background-image: url('/sprite');
     background-repeat: no-repeat;
     background-size: 800% 900%;
     background-position: 0% 0%;
@@ -158,23 +150,22 @@ window.setBubble = function(text, durationMs, persist) {{
   }}
 }};
 
-// --- Drag: mousedown anywhere on window → move window ---
-var dragging = false, wasDrag = false, startX = 0, startY = 0, lastMove = 0;
+// --- Drag: mousedown anywhere → absolute positioning (避免增量累积误差) ---
+var dragging = false, wasDrag = false, dragOriginX = 0, dragOriginY = 0, lastMove = 0;
 document.body.addEventListener('mousedown', function(e) {{
   if (e.button !== 0) return;
-  if (e.target === pet || pet.contains(e.target)) return; // skip drag on pet
   dragging = true; wasDrag = false;
-  startX = e.screenX; startY = e.screenY; lastMove = 0;
+  dragOriginX = e.screenX; dragOriginY = e.screenY; lastMove = 0;
+  window.ipc.postMessage(JSON.stringify({{type:'dragStart'}}));
 }});
 window.addEventListener('mousemove', function(e) {{
   if (!dragging) return;
   var now = Date.now();
-  if (now - lastMove < 16) return; // throttle to ~60fps
+  if (now - lastMove < 16) return;
   lastMove = now;
-  var dx = e.screenX - startX, dy = e.screenY - startY;
+  var dx = e.screenX - dragOriginX, dy = e.screenY - dragOriginY;
   if (Math.abs(dx) > 2 || Math.abs(dy) > 2) wasDrag = true;
   window.ipc.postMessage(JSON.stringify({{type:'move',dx:dx,dy:dy}}));
-  startX = e.screenX; startY = e.screenY;
 }});
 window.addEventListener('mouseup', function() {{
   if (!dragging) return;
@@ -294,7 +285,7 @@ pet.addEventListener('dblclick', function(e) {{
 
 
 </script>
-</body></html>"#, mime=mime, b64=b64, slug_json=slug_json, pets_json=pets_json, saved_scale=saved_scale)
+</body></html>"#, slug_json=slug_json, pets_json=pets_json, saved_scale=saved_scale)
 }
 
 pub fn build_empty_page(message: &str) -> String {
@@ -306,14 +297,15 @@ p{{color:rgba(255,255,255,0.6);font-size:9px;text-align:center;white-space:pre-l
 }
 
 pub fn load_pet_bytes(slug: &str) -> Option<Vec<u8>> {
-    // 安全：拒绝路径遍历
     if slug.contains("..") || slug.contains('/') || slug.contains('\\') {
         return None;
     }
-    let home = std::env::var("HOME").ok()?;
-    for base in &[format!("{}/.codex/pets", home), format!("{}/.petdex/pets", home)] {
+    let home = crate::home_dir()?;
+    let home = std::path::PathBuf::from(home);
+    let bases = [home.join(".codex").join("pets"), home.join(".petdex").join("pets")];
+    for base in &bases {
         for ext in &["webp", "png"] {
-            let path = format!("{}/{}/spritesheet.{}", base, slug, ext);
+            let path = base.join(slug).join(format!("spritesheet.{}", ext));
             if let Ok(b) = std::fs::read(&path) { return Some(b); }
         }
     }
@@ -321,8 +313,10 @@ pub fn load_pet_bytes(slug: &str) -> Option<Vec<u8>> {
 }
 
 pub fn find_first_pet() -> Option<(Vec<u8>, String)> {
-    let home = std::env::var("HOME").ok()?;
-    for base in &[format!("{}/.codex/pets", home), format!("{}/.petdex/pets", home)] {
+    let home = crate::home_dir()?;
+    let home = std::path::PathBuf::from(home);
+    let bases = [home.join(".codex").join("pets"), home.join(".petdex").join("pets")];
+    for base in &bases {
         let dir = std::fs::read_dir(base).ok()?;
         for entry in dir.flatten() {
             let path = entry.path();
