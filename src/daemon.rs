@@ -22,13 +22,16 @@ pub struct PetInfo {
 
 fn list_pets() -> Vec<PetInfo> {
     let mut pets = Vec::new();
-    let home = match std::env::var("HOME") { Ok(h) => h, Err(_) => return pets };
-    for base in &[format!("{}/.codex/pets", home), format!("{}/.petdex/pets", home)] {
+    let home = match crate::home_dir() { Some(h) => h, None => return pets };
+    let home = std::path::PathBuf::from(home);
+    let bases = [home.join(".codex").join("pets"), home.join(".petdex").join("pets")];
+    for base in &bases {
         let dir = match std::fs::read_dir(base) { Ok(d) => d, Err(_) => continue };
         for entry in dir.flatten() {
             let path = entry.path();
             if !path.is_dir() { continue; }
             let slug = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+            if slug.is_empty() || slug.contains("..") { continue; }
             for ext in &["webp", "png"] {
                 let sheet = path.join(format!("spritesheet.{}", ext));
                 if sheet.exists() {
@@ -81,11 +84,33 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     std::thread::spawn(move || { start_server(listener, state_srv); });
 
     // Window
-    let window = WindowBuilder::new()
+    let mut window_builder = WindowBuilder::new()
         .with_inner_size(tao::dpi::LogicalSize::new(140.0, 180.0))
         .with_decorations(false).with_transparent(true).with_always_on_top(true)
-        .with_resizable(false)
-        .build(&event_loop).expect("window");
+        .with_resizable(false);
+    #[cfg(target_os = "windows")]
+    { use tao::platform::windows::WindowBuilderExtWindows;
+      window_builder = window_builder.with_skip_taskbar(true).with_no_redirection_bitmap(true); }
+    let window = window_builder.build(&event_loop).expect("window");
+
+    // Windows: 移除标题栏 + 白边
+    #[cfg(target_os = "windows")]
+    {
+        use tao::platform::windows::WindowExtWindows;
+        unsafe {
+            extern "system" {
+                fn SetWindowLongPtrW(hwnd: isize, index: i32, new_long: isize) -> isize;
+                fn GetWindowLongPtrW(hwnd: isize, index: i32) -> isize;
+                fn SetWindowPos(hwnd: isize, after: isize, x: i32, y: i32, cx: i32, cy: i32, flags: u32) -> i32;
+            }
+            let hwnd = window.hwnd();
+            let style = GetWindowLongPtrW(hwnd, -16);
+            SetWindowLongPtrW(hwnd, -16, style & !((0x00800000_i32 | 0x00040000 | 0x00C00000) as isize));
+            let ex_style = GetWindowLongPtrW(hwnd, -20);
+            SetWindowLongPtrW(hwnd, -20, ex_style & !((0x00000001_i32 | 0x00000200 | 0x00020000) as isize));
+            SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0020 | 0x0002 | 0x0001 | 0x0004);
+        }
+    }
 
     // Restore saved position, or default to bottom-right
     if let Some((x, y)) = load_position() {
@@ -161,9 +186,11 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     let _ = proxy_ipc.send_event(UiCommand::SwitchPet { slug: slug.into() });
                 }
                 if let Some(url) = v.get("url").and_then(|u| u.as_str()) {
-                    // 只允许打开项目 GitHub 主页
                     if url == "https://github.com/Jedeiah/agent-critter" {
-                        let _ = std::process::Command::new("open").arg(url).spawn();
+                        #[cfg(target_os = "macos")]
+                        { let _ = std::process::Command::new("open").arg(url).spawn(); }
+                        #[cfg(target_os = "windows")]
+                        { let _ = std::process::Command::new("cmd").args(["/c", "start", url]).spawn(); }
                     }
                 }
                 if v.get("type").and_then(|t| t.as_str()) == Some("savePos") {
@@ -413,7 +440,7 @@ fn load_pet_slug() -> Option<String> {
 }
 
 fn data_dir() -> std::path::PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+    let home = crate::home_dir().unwrap_or_else(|| ".".into());
     std::path::PathBuf::from(home).join(".agent-critter").join("data")
 }
 

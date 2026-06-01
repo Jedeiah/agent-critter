@@ -298,14 +298,15 @@ p{{color:rgba(255,255,255,0.6);font-size:9px;text-align:center;white-space:pre-l
 }
 
 pub fn load_pet_bytes(slug: &str) -> Option<Vec<u8>> {
-    // 安全：拒绝路径遍历
     if slug.contains("..") || slug.contains('/') || slug.contains('\\') {
         return None;
     }
-    let home = std::env::var("HOME").ok()?;
-    for base in &[format!("{}/.codex/pets", home), format!("{}/.petdex/pets", home)] {
+    let home = crate::home_dir()?;
+    let home = std::path::PathBuf::from(home);
+    let bases = [home.join(".codex").join("pets"), home.join(".petdex").join("pets")];
+    for base in &bases {
         for ext in &["webp", "png"] {
-            let path = format!("{}/{}/spritesheet.{}", base, slug, ext);
+            let path = base.join(slug).join(format!("spritesheet.{}", ext));
             if let Ok(b) = std::fs::read(&path) { return Some(b); }
         }
     }
@@ -313,8 +314,10 @@ pub fn load_pet_bytes(slug: &str) -> Option<Vec<u8>> {
 }
 
 pub fn find_first_pet() -> Option<(Vec<u8>, String)> {
-    let home = std::env::var("HOME").ok()?;
-    for base in &[format!("{}/.codex/pets", home), format!("{}/.petdex/pets", home)] {
+    let home = crate::home_dir()?;
+    let home = std::path::PathBuf::from(home);
+    let bases = [home.join(".codex").join("pets"), home.join(".petdex").join("pets")];
+    for base in &bases {
         let dir = std::fs::read_dir(base).ok()?;
         for entry in dir.flatten() {
             let path = entry.path();

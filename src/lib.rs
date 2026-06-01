@@ -10,3 +10,9 @@ pub mod hook;
 pub mod server;
 pub mod state;
 pub mod webview;
+
+pub fn home_dir() -> Option<String> {
+    std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .ok()
+}
