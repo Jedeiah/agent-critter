@@ -154,7 +154,7 @@ window.setBubble = function(text, durationMs, persist) {{
 var dragging = false, wasDrag = false, startX = 0, startY = 0, lastMove = 0;
 document.body.addEventListener('mousedown', function(e) {{
   if (e.button !== 0) return;
-  if (e.target === pet || pet.contains(e.target)) return; // skip drag on pet
+  if (navigator.platform.indexOf('Mac') !== -1 && (e.target === pet || pet.contains(e.target))) return;
   dragging = true; wasDrag = false;
   startX = e.screenX; startY = e.screenY; lastMove = 0;
 }});
