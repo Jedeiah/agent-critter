@@ -23,6 +23,7 @@ pub fn build_page(current_slug: &str, pets_json: &str, saved_scale: f64) -> Stri
     cursor: grab;
   }}
   .pet.dragging {{ cursor: grabbing; }}
+  ::-webkit-scrollbar {{ display: none; }}
 </style>
 </head>
 <body>
@@ -184,7 +185,7 @@ pet.addEventListener('contextmenu', function(e) {{
   if (!menu) {{
     menu = document.createElement('div');
     menu.id = 'pet-menu';
-    menu.style.cssText = 'position:fixed;background:rgba(20,20,22,0.96);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;z-index:999;left:4px;right:4px;top:4px;bottom:4px;overflow-y:auto;overflow-x:hidden;pointer-events:auto;display:none';
+    menu.style.cssText = 'position:fixed;background:rgba(20,20,22,0.96);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;z-index:999;left:4px;right:4px;top:4px;bottom:4px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;pointer-events:auto;display:none';
     document.body.appendChild(menu);
     // Dismiss on outside click or window blur
     document.addEventListener('click', function(ev) {{ if (menu && menu.style.display === 'block' && !menu.contains(ev.target) && ev.target !== pet) {{ menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }} }});
@@ -194,9 +195,11 @@ pet.addEventListener('contextmenu', function(e) {{
   var pets = window.__PETS || [];
   if (pets.length === 0) pets = [{{slug:'default',name:'Default'}}];
   pets.forEach(function(p) {{
-    var item = document.createElement('div');
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;padding:2px 0';
+    var item = document.createElement('span');
     item.textContent = p.name;
-    item.style.cssText = 'padding:4px 8px;border-radius:4px;color:#ccc;cursor:pointer;font-size:11px';
+    item.style.cssText = 'flex:1;padding:2px 8px;border-radius:4px;color:#ccc;cursor:pointer;font-size:11px';
     if (p.slug === CURRENT_SLUG) item.style.color = '#00e676';
     item.addEventListener('mouseenter', function() {{ item.style.background = 'rgba(255,255,255,0.1)'; item.style.color = '#fff'; }});
     item.addEventListener('mouseleave', function() {{ item.style.background = ''; item.style.color = p.slug===CURRENT_SLUG?'#00e676':'#ccc'; }});
@@ -205,7 +208,15 @@ pet.addEventListener('contextmenu', function(e) {{
       menu.style.display = 'none';
       document.body.style.pointerEvents = 'none';
     }});
-    menu.appendChild(item);
+    row.appendChild(item);
+    var del = document.createElement('span');
+    del.textContent = '✕';
+    del.style.cssText = 'padding:2px 6px;border-radius:3px;color:rgba(255,255,255,0.3);cursor:pointer;font-size:9px';
+    del.addEventListener('mouseenter', function(){{ del.style.color='#f88'; }});
+    del.addEventListener('mouseleave', function(){{ del.style.color='rgba(255,255,255,0.3)'; }});
+    del.addEventListener('click', function(ev){{ ev.stopPropagation(); window.ipc.postMessage(JSON.stringify({{type:'deletePet',slug:p.slug}})); menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }});
+    row.appendChild(del);
+    menu.appendChild(row);
   }});
   menu.appendChild(document.createElement('hr'));
   var market = document.createElement('div');
