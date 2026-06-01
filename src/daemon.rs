@@ -93,7 +93,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
       window_builder = window_builder.with_skip_taskbar(true).with_no_redirection_bitmap(true); }
     let window = window_builder.build(&event_loop).expect("window");
 
-    // Windows: 强制移除所有边框/标题栏样式，解决 Windows 11 顶部白线
+    // Windows: 移除标题栏 + 白边
     #[cfg(target_os = "windows")]
     {
         use tao::platform::windows::WindowExtWindows;
