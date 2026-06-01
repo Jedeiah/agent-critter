@@ -154,10 +154,6 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     ));
     let sprite_serve = Arc::clone(&sprite_data);
 
-    // 拖拽起始位置（绝对定位，避免增量累积误差）
-    let drag_origin: Arc<Mutex<(i32, i32)>> = Arc::new(Mutex::new((0, 0)));
-    let drag_origin_ipc = Arc::clone(&drag_origin);
-
     // WebView: IPC handler moves window directly, no EventLoop roundtrip
     let proxy_ipc = proxy.clone();
     let drag_win = win_arc.clone();
@@ -243,8 +239,8 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     let dx = v.get("dx").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
                     let dy = v.get("dy").and_then(|d| d.as_i64()).unwrap_or(0) as i32;
                     if let Ok(w) = drag_win.lock() {
-                        let origin = *drag_origin_ipc.lock().unwrap();
-                        w.set_outer_position(tao::dpi::PhysicalPosition::new(origin.0 + dx, origin.1 + dy));
+                        let pos = w.outer_position().unwrap_or_default();
+                        w.set_outer_position(tao::dpi::PhysicalPosition::new(pos.x + dx, pos.y + dy));
                     }
                 }
             }
