@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
 
@@ -52,6 +53,7 @@ pub enum UiCommand {
     SwitchPet { slug: String },
     IdleAction { action_state: &'static str, bubble: &'static str },
     SessionCount(u32),
+    ShowBubble { text: String, duration_ms: u64 },
     Quit,
 }
 
@@ -186,7 +188,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     let _ = proxy_ipc.send_event(UiCommand::SwitchPet { slug: slug.into() });
                 }
                 if let Some(url) = v.get("url").and_then(|u| u.as_str()) {
-                    if url == "https://github.com/Jedeiah/agent-critter" {
+                    if url == "https://github.com/Jedeiah/agent-critter" || url.starts_with("https://petdex.crafter.run") {
                         #[cfg(target_os = "macos")]
                         { let _ = std::process::Command::new("open").arg(url).spawn(); }
                         #[cfg(target_os = "windows")]
@@ -235,6 +237,79 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     if let Ok(w) = drag_win.lock() {
                         let pos = w.outer_position().unwrap_or_default();
                         w.set_outer_position(tao::dpi::PhysicalPosition::new(pos.x + dx, pos.y + dy));
+                    }
+                }
+                if v.get("type").and_then(|t| t.as_str()) == Some("installPet") {
+                    if let Some(name) = v.get("name").and_then(|n| n.as_str()) {
+                        let name = name.to_string();
+                        let is_random = name == "__random__";
+                        let proxy = proxy_ipc.clone();
+                        std::thread::spawn(move || {
+                            // 获取 manifest
+                            let resp = match ureq::get("https://petdex.crafter.run/api/manifest").call() {
+                                Ok(r) => r,
+                                Err(_) => { return; }
+                            };
+                            let root: serde_json::Value = match serde_json::from_reader(resp.into_body().into_reader()) {
+                                Ok(v) => v,
+                                Err(_) => { return; }
+                            };
+                            let entries: &[serde_json::Value] = match root.get("pets").and_then(|p| p.as_array()) {
+                                Some(a) => a.as_slice(),
+                                None => { return; }
+                            };
+                            // 随机选一个
+                            let pick = if is_random {
+                                let idx = std::time::SystemTime::now()
+                                    .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                                    .unwrap_or_default().as_millis() as usize % entries.len();
+                                entries.get(idx)
+                            } else {
+                                None
+                            };
+                            // 查找匹配的宠物（slug 或 displayName）
+                            let entry = pick.or_else(|| entries.iter().find(|e| {
+                                e.get("slug").and_then(|s| s.as_str()) == Some(&name)
+                                    || e.get("displayName").and_then(|n| n.as_str()) == Some(&name)
+                            }));
+                            if entry.is_none() {
+                                let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("❌ 没找到 {}", name), duration_ms: 3000 });
+                                return;
+                            }
+                            let entry = entry.unwrap();
+                            let actual_name = entry.get("slug").and_then(|v| v.as_str())
+                                .or_else(|| entry.get("displayName").and_then(|v| v.as_str()))
+                                .unwrap_or(&name);
+                            // 检查是否已安装
+                            if crate::webview::load_pet_bytes(actual_name).is_some() {
+                                let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("✅ {} 已存在", actual_name), duration_ms: 2000 });
+                                let _ = proxy.send_event(UiCommand::SwitchPet { slug: actual_name.to_string() });
+                                return;
+                            }
+                            let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("正在下载 {}...", actual_name), duration_ms: 5000 });
+                            let spritesheet_url = match entry.get("spritesheetUrl").and_then(|u| u.as_str()) {
+                                Some(u) => u.to_string(),
+                                None => return,
+                            };
+                            // 下载精灵图
+                            let img_resp = match ureq::get(&spritesheet_url).call() {
+                                Ok(r) => r,
+                                Err(_) => return,
+                            };
+                            let mut img_data = Vec::new();
+                            if img_resp.into_body().into_reader().read_to_end(&mut img_data).is_err() { return; }
+                            // 保存到磁盘
+                            let home = match crate::home_dir() {
+                                Some(h) => std::path::PathBuf::from(h),
+                                None => return,
+                            };
+                            let pet_dir = home.join(".codex").join("pets").join(actual_name);
+                            if std::fs::create_dir_all(&pet_dir).is_err() { return; }
+                            let ext = if spritesheet_url.ends_with(".png") { "png" } else { "webp" };
+                            if std::fs::write(&pet_dir.join(format!("spritesheet.{}", ext)), &img_data).is_err() { return; }
+                            let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("✅ 已安装 {}", actual_name), duration_ms: 3000 });
+                            let _ = proxy.send_event(UiCommand::SwitchPet { slug: actual_name.to_string() });
+                        });
                     }
                 }
             }
@@ -415,6 +490,11 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 UiCommand::SessionCount(n) => {
                     if let Some(ref wv) = webview {
                         let _ = wv.evaluate_script(&format!("window.__sessions={}", n));
+                    }
+                }
+                UiCommand::ShowBubble { text, duration_ms } => {
+                    if let Some(ref wv) = webview {
+                        let _ = wv.evaluate_script(&format!("setBubble({},{},false)", serde_json::to_string(&text).unwrap_or_default(), duration_ms));
                     }
                 }
                 UiCommand::Quit => *control_flow = ControlFlow::Exit,

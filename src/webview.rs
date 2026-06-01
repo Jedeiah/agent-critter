@@ -184,7 +184,7 @@ pet.addEventListener('contextmenu', function(e) {{
   if (!menu) {{
     menu = document.createElement('div');
     menu.id = 'pet-menu';
-    menu.style.cssText = 'position:fixed;background:rgba(20,20,22,0.96);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px;z-index:999;min-width:115px;max-height:160px;overflow-y:auto;pointer-events:auto;display:none';
+    menu.style.cssText = 'position:fixed;background:rgba(20,20,22,0.96);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;z-index:999;left:4px;right:4px;top:4px;bottom:4px;overflow-y:auto;overflow-x:hidden;pointer-events:auto;display:none';
     document.body.appendChild(menu);
     // Dismiss on outside click or window blur
     document.addEventListener('click', function(ev) {{ if (menu && menu.style.display === 'block' && !menu.contains(ev.target) && ev.target !== pet) {{ menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }} }});
@@ -208,11 +208,54 @@ pet.addEventListener('contextmenu', function(e) {{
     menu.appendChild(item);
   }});
   menu.appendChild(document.createElement('hr'));
-  var quit = document.createElement('div');
-  quit.textContent = '× 退出';
-  quit.style.cssText = 'padding:4px 8px;border-radius:4px;color:#f88;cursor:pointer;font-size:11px';
-  quit.addEventListener('click', function() {{ window.ipc.postMessage('quit'); menu.style.display = 'none'; }});
-  menu.appendChild(quit);
+  var market = document.createElement('div');
+  market.innerHTML = '🌐 浏览市场找名字';
+  market.style.cssText = 'padding:5px 8px;border-radius:4px;color:#58a6ff;cursor:pointer;font-size:10px;text-align:center';
+  market.addEventListener('mouseenter', function() {{ market.style.background = 'rgba(88,166,255,0.1)'; }});
+  market.addEventListener('mouseleave', function() {{ market.style.background = ''; }});
+  market.addEventListener('click', function() {{ window.ipc.postMessage(JSON.stringify({{url:'https://petdex.crafter.run/zh/collections'}})); menu.style.display = 'none'; }});
+  menu.appendChild(market);
+  // 输入框（占一行）
+  var installInput = document.createElement('input');
+  installInput.id = 'pet-install-input';
+  installInput.placeholder = '输入宠物名字';
+  installInput.style.cssText = 'display:block;width:calc(100% - 8px);margin:3px auto;padding:3px 4px;border:1px solid rgba(255,255,255,0.15);border-radius:3px;background:rgba(255,255,255,0.05);color:#ccc;font-size:10px;outline:none;box-sizing:border-box';
+  installInput.addEventListener('keydown', function(ev) {{ if (ev.key === 'Enter') ev.stopPropagation(); }});
+  menu.appendChild(installInput);
+  // 按钮行
+  var installBtns = document.createElement('div');
+  installBtns.style.cssText = 'display:flex;gap:4px;justify-content:center;padding:2px 0;flex-wrap:nowrap';
+  var installBtn = document.createElement('div');
+  installBtn.textContent = '📥装';
+  installBtn.style.cssText = 'padding:2px 8px;border-radius:4px;color:#4caf50;cursor:pointer;font-size:10px';
+  installBtn.addEventListener('mouseenter', function(){{ installBtn.style.background='rgba(255,255,255,0.1)'; }});
+  installBtn.addEventListener('mouseleave', function(){{ installBtn.style.background=''; }});
+  installBtn.addEventListener('click', function() {{
+    var name = installInput.value.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!name) {{ installInput.focus(); return; }}
+    window.ipc.postMessage(JSON.stringify({{type:'installPet',name:name}}));
+    menu.style.display = 'none';
+    document.body.style.pointerEvents = 'none';
+  }});
+  installBtns.appendChild(installBtn);
+  var randomBtn = document.createElement('div');
+  randomBtn.textContent = '🎲随机';
+  randomBtn.style.cssText = 'padding:2px 8px;border-radius:4px;color:#ff9800;cursor:pointer;font-size:10px';
+  randomBtn.addEventListener('mouseenter', function(){{ randomBtn.style.background='rgba(255,255,255,0.1)'; }});
+  randomBtn.addEventListener('mouseleave', function(){{ randomBtn.style.background=''; }});
+  randomBtn.addEventListener('click', function() {{
+    window.ipc.postMessage(JSON.stringify({{type:'installPet',name:'__random__'}}));
+    menu.style.display = 'none';
+    document.body.style.pointerEvents = 'none';
+  }});
+  installBtns.appendChild(randomBtn);
+  menu.appendChild(installBtns);
+  var hint = document.createElement('div');
+  hint.textContent = '💡 浏览市场看宠物图和名字';
+  hint.style.cssText = 'padding:0 8px 4px;color:rgba(255,255,255,0.35);font-size:8px;text-align:center';
+  menu.appendChild(hint);
+  menu.appendChild(document.createElement('hr'));
+
   // GitHub link
   // Size control
   window.__petScale = window.__petScale || 1.0;
@@ -245,9 +288,15 @@ pet.addEventListener('contextmenu', function(e) {{
   github.addEventListener('mouseleave', function() {{ github.style.background = ''; }});
   github.addEventListener('click', function() {{ window.ipc.postMessage(JSON.stringify({{url:'https://github.com/Jedeiah/agent-critter'}})); menu.style.display = 'none'; }});
   menu.appendChild(github);
+  var quit = document.createElement('div');
+  quit.textContent = '× 退出';
+  quit.style.cssText = 'padding:4px 8px;border-radius:4px;color:#f88;cursor:pointer;font-size:11px;text-align:right';
+  quit.addEventListener('mouseenter', function(){{ quit.style.background='rgba(255,255,255,0.05)'; }});
+  quit.addEventListener('mouseleave', function(){{ quit.style.background=''; }});
+  quit.addEventListener('click', function() {{ window.ipc.postMessage('quit'); menu.style.display = 'none'; }});
+  menu.appendChild(quit);
   document.body.style.pointerEvents = 'auto';
   menu.style.display = 'block';
-  menu.style.right = '4px';
   menu.style.top = '4px';
   e.stopPropagation();
   // Auto-close after 3s (reset on hover)
