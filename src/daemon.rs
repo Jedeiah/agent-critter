@@ -193,7 +193,12 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                         #[cfg(target_os = "macos")]
                         { let _ = std::process::Command::new("open").arg(url).spawn(); }
                         #[cfg(target_os = "windows")]
-                        { let _ = std::process::Command::new("cmd").args(["/c", "start", url]).spawn(); }
+                        {
+                            use std::os::windows::process::CommandExt;
+                            let _ = std::process::Command::new("cmd").args(["/c", "start", url])
+                                .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
+                                .spawn();
+                        }
                     }
                 }
                 if v.get("type").and_then(|t| t.as_str()) == Some("savePos") {
