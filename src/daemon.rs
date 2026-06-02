@@ -70,8 +70,8 @@ fn state_name(s: LightState) -> &'static str {
 
 fn bubble_text(s: LightState) -> &'static str {
     match s {
-        LightState::Running => "收到！", LightState::NeedConfirm => "等等...",
-        LightState::ToolError => "哎呀！", LightState::ErrorFinal => "救我！",
+        LightState::Running => "🏃 干得飞起！", LightState::NeedConfirm => "🤔 让我想想...",
+        LightState::ToolError => "😅 翻车了翻车了", LightState::ErrorFinal => "😱 炸了！救命！",
         LightState::Idle => "",
     }
 }
@@ -250,6 +250,15 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                         let slug = slug.to_string();
                         let proxy = proxy_ipc.clone();
                         if slug == "default" { return; }
+                        // 检查是否最后一个或正在使用
+                        if list_pets().len() <= 1 {
+                            let _ = proxy.send_event(UiCommand::ShowBubble { text: "😠就剩我一个了，删了谁陪你啊！".into(), duration_ms: 3000 });
+                            return;
+                        }
+                        if load_pet_slug().as_deref() == Some(&slug) {
+                            let _ = proxy.send_event(UiCommand::ShowBubble { text: "😝我还在呢，先换别的再删我嘛！".into(), duration_ms: 3000 });
+                            return;
+                        }
                         // 删除宠物文件夹
                         let home = crate::home_dir().map(std::path::PathBuf::from);
                         if let Some(h) = home {
@@ -258,7 +267,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                             }
                         }
                         let _ = proxy.send_event(UiCommand::RefreshPets);
-                        let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("🗑️ 已删除 {}", slug), duration_ms: 2000 });
+                        let _ = proxy.send_event(UiCommand::ShowBubble { text: "😭 好舍不得小伙伴！".into(), duration_ms: 3000 });
                     }
                 }
                 if v.get("type").and_then(|t| t.as_str()) == Some("installPet") {
@@ -295,7 +304,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                                     || e.get("displayName").and_then(|n| n.as_str()) == Some(&name)
                             }));
                             if entry.is_none() {
-                                let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("❌ 没找到 {}", name), duration_ms: 3000 });
+                                let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("🤔没找到“{}”耶，是不是打错字了？", name), duration_ms: 3000 });
                                 return;
                             }
                             let entry = entry.unwrap();
@@ -304,12 +313,12 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                                 .unwrap_or(&name);
                             // 检查是否已安装
                             if crate::webview::load_pet_bytes(actual_name).is_some() {
-                                let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("✅ {} 已存在", actual_name), duration_ms: 2000 });
+                                let _ = proxy.send_event(UiCommand::ShowBubble { text: "😊我就在呢，你这么想我呀！".into(), duration_ms: 3000 });
                                 let _ = proxy.send_event(UiCommand::RefreshPets);
                                 let _ = proxy.send_event(UiCommand::SwitchPet { slug: actual_name.to_string() });
                                 return;
                             }
-                            let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("正在下载 {}...", actual_name), duration_ms: 5000 });
+                            let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("🏃️{} 马上就来喽...", actual_name), duration_ms: 5000 });
                             let spritesheet_url = match entry.get("spritesheetUrl").and_then(|u| u.as_str()) {
                                 Some(u) => u.to_string(),
                                 None => return,
@@ -330,7 +339,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                             if std::fs::create_dir_all(&pet_dir).is_err() { return; }
                             let ext = if spritesheet_url.ends_with(".png") { "png" } else { "webp" };
                             if std::fs::write(&pet_dir.join(format!("spritesheet.{}", ext)), &img_data).is_err() { return; }
-                            let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("✅ 已安装 {}", actual_name), duration_ms: 3000 });
+                            let _ = proxy.send_event(UiCommand::ShowBubble { text: "🎉 我来啦，快欢迎欢迎！".into(), duration_ms: 3000 });
                             let _ = proxy.send_event(UiCommand::RefreshPets);
                             let _ = proxy.send_event(UiCommand::SwitchPet { slug: actual_name.to_string() });
                         });
