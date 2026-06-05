@@ -313,15 +313,21 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                             // 获取 manifest
                             let resp = match agent.get("https://petdex.crafter.run/api/manifest").call() {
                                 Ok(r) => r,
-                                Err(_) => { bubble("😿网络开小差了，检查一下网络再试试？"); return; }
+                                Err(e) => { eprintln!("[agent-critter] manifest API 请求失败: {e:?}"); bubble("😿网络开小差了，检查一下网络再试试？"); return; }
                             };
-                            let root: serde_json::Value = match serde_json::from_reader(resp.into_body().into_reader()) {
+                            let status = resp.status();
+                            let mut body = resp.into_body().into_reader();
+                            let mut raw = Vec::new();
+                            let _ = body.read_to_end(&mut raw);
+                            eprintln!("[agent-critter] manifest API 响应 status={status} body_len={}", raw.len());
+                            eprintln!("[agent-critter] manifest API 响应前 500 字节: {}", String::from_utf8_lossy(&raw[..raw.len().min(500)]));
+                            let root: serde_json::Value = match serde_json::from_slice(&raw) {
                                 Ok(v) => v,
-                                Err(_) => { bubble("😿宠物数据解析失败了，稍后再试试？"); return; }
+                                Err(e) => { eprintln!("[agent-critter] manifest JSON 解析失败: {e:?}"); bubble("😿宠物数据解析失败了，稍后再试试？"); return; }
                             };
                             let entries: &[serde_json::Value] = match root.get("pets").and_then(|p| p.as_array()) {
-                                Some(a) => a.as_slice(),
-                                None => { bubble("😿宠物市场暂时没数据，去逛逛网页版吧~"); return; }
+                                Some(a) => { eprintln!("[agent-critter] manifest 宠物数量: {}", a.len()); a.as_slice() }
+                                None => { eprintln!("[agent-critter] manifest 无 pets 数组, root keys: {:?}", root.as_object().map(|o| o.keys().collect::<Vec<_>>())); bubble("😿宠物市场暂时没数据，去逛逛网页版吧~"); return; }
                             };
                             // 随机选一个
                             let pick = if is_random {
@@ -345,6 +351,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                             let actual_name = entry.get("slug").and_then(|v| v.as_str())
                                 .or_else(|| entry.get("displayName").and_then(|v| v.as_str()))
                                 .unwrap_or(&name);
+                            eprintln!("[agent-critter] 选中的宠物: slug={actual_name:?}, entry keys: {:?}", entry.as_object().map(|o| o.keys().collect::<Vec<_>>()));
                             // 检查是否已安装
                             if crate::webview::load_pet_bytes(actual_name).is_some() {
                                 let _ = proxy.send_event(UiCommand::ShowBubble { text: "😊我就在呢，你这么想我呀！".into(), duration_ms: 3000 });
@@ -355,24 +362,30 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                             let _ = proxy.send_event(UiCommand::ShowBubble { text: format!("🏃️{} 马上就来喽...", actual_name), duration_ms: 5000 });
                             let spritesheet_url = match entry.get("spritesheetUrl").and_then(|u| u.as_str()) {
                                 Some(u) => u.to_string(),
-                                None => { bubble("😿这个宠物没有精灵图，换一个试试？"); return; }
+                                None => { eprintln!("[agent-critter] 宠物 {actual_name:?} 无 spritesheetUrl"); bubble("😿这个宠物没有精灵图，换一个试试？"); return; }
                             };
+                            eprintln!("[agent-critter] 开始下载精灵图: {spritesheet_url}");
                             // 下载精灵图
                             let img_resp = match agent.get(&spritesheet_url).call() {
                                 Ok(r) => r,
-                                Err(_) => { bubble("😿图片下载失败了，检查网络再试试？"); return; }
+                                Err(e) => { eprintln!("[agent-critter] 精灵图下载失败: {e:?}"); bubble("😿图片下载失败了，检查网络再试试？"); return; }
                             };
+                            let img_status = img_resp.status();
                             let mut img_data = Vec::new();
-                            if img_resp.into_body().into_reader().read_to_end(&mut img_data).is_err() { bubble("😿图片读取失败了，稍后再试试？"); return; }
+                            if img_resp.into_body().into_reader().read_to_end(&mut img_data).is_err() { eprintln!("[agent-critter] 精灵图读取失败"); bubble("😿图片读取失败了，稍后再试试？"); return; }
+                            eprintln!("[agent-critter] 精灵图下载完成: status={img_status}, size={}", img_data.len());
                             // 保存到磁盘
                             let home = match crate::home_dir() {
                                 Some(h) => std::path::PathBuf::from(h),
                                 None => { bubble("😿找不到家目录，没法保存宠物呢~"); return; }
                             };
                             let pet_dir = home.join(".codex").join("pets").join(actual_name);
-                            if std::fs::create_dir_all(&pet_dir).is_err() { bubble("😿创建宠物目录失败了~"); return; }
+                            eprintln!("[agent-critter] 保存宠物到: {}", pet_dir.display());
+                            if std::fs::create_dir_all(&pet_dir).is_err() { eprintln!("[agent-critter] 创建目录失败: {}", pet_dir.display()); bubble("😿创建宠物目录失败了~"); return; }
                             let ext = if spritesheet_url.ends_with(".png") { "png" } else { "webp" };
-                            if std::fs::write(&pet_dir.join(format!("spritesheet.{}", ext)), &img_data).is_err() { bubble("😿保存宠物文件失败了~"); return; }
+                            let file_path = pet_dir.join(format!("spritesheet.{}", ext));
+                            if std::fs::write(&file_path, &img_data).is_err() { eprintln!("[agent-critter] 写入文件失败: {}", file_path.display()); bubble("😿保存宠物文件失败了~"); return; }
+                            eprintln!("[agent-critter] 宠物安装完成: {} -> {}", actual_name, file_path.display());
                             let _ = proxy.send_event(UiCommand::ShowBubble { text: "🎉 我来啦，快欢迎欢迎！".into(), duration_ms: 3000 });
                             let _ = proxy.send_event(UiCommand::RefreshPets);
                             let _ = proxy.send_event(UiCommand::SwitchPet { slug: actual_name.to_string() });
