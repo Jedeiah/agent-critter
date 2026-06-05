@@ -3,181 +3,252 @@
 [![Rust](https://img.shields.io/badge/rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Petdex](https://img.shields.io/badge/pets-2700%2B-ff69b4.svg)](https://petdex.crafter.run)
+[![Plugin Hub](https://img.shields.io/badge/plugin-available-8A2BE2.svg)](https://www.claudepluginhub.com/plugins/jedeiah-agent-critter)
 
-> **✅ 跨平台支持：** 已通过 macOS 和 Windows 11 测试。
+> **跨平台支持：** macOS 和 Windows 11 已测试。
 
-**Claude Code 桌宠插件** —— 一只实时展示你的 AI 编程助手工作状态的小精灵。支持 [Petdex](https://petdex.crafter.run) 社区 2700+ 精灵，一键切换。透明窗口、可拖拽、可缩放。
+**Agent Critter** 是一个 Claude Code 桌宠插件 —— 一只实时展示你的 AI 编程助手工作状态的小精灵。支持 [Petdex](https://petdex.crafter.run) 社区 2700+ 精灵，一键切换。透明窗口、可拖拽、可缩放。
 
-> 参考了 [Petdex](https://github.com/crafter-station/petdex) 的精灵格式和 HTML 模板设计。
+---
 
-## 效果预览
+## 预览
 
 | 待机 | 工作中 | 放大 |
 |------|--------|------|
 | ![待机](idle.png) | ![工作中](working.png) | ![放大](zoomed.png) |
 
-## 特性
+---
 
-- 🎨 **Petdex 兼容**：支持 [2700+ 社区精灵](https://petdex.crafter.run)，右键菜单直接搜索安装或随机
-- 🔄 **实时状态同步**：根据 AI 助手状态自动切换动画（空闲/工作中/报错/确认）
-- 🎯 **多会话支持**：多个 Agent 同时运行时取最高优先级状态
-- 🖱️ **右键菜单**：切换宠物、搜索安装、随机一只、缩放、打开市场、退出
-- 📐 **缩放**：0.5x ~ 1.5x 可调，窗口自动跟随，菜单全屏弹框
-- 💬 **气泡**：Hook 状态气泡（持久）/ 闲时气泡（自动消失）/ 安装进度反馈
-- 💤 **闲时动作**：30s 后概率触发互动，2 小时后休眠
-- 🪟 **原生透明窗口**：macOS WKWebView / Windows WebView2，无黑底无闪烁
-- 🌐 **内置宠物市场**：输入名字或随机，自动从 Petdex API 下载安装，无需 Node.js
-- 📦 **轻量**：~3MB 二进制，无需额外运行时
+## 安装
 
-## 快速开始
+### 前置条件
 
-### Claude Code 插件安装（推荐）
+- [Claude Code](https://code.claude.com) CLI（插件模式）
+- 或：macOS / Windows 系统（独立运行模式）
 
-1. 在 Claude Code 中输入 `/plugin`
-2. 选择 **Marketplaces** → **Add Marketplace**
-3. 输入 `Jedeiah/agent-critter`，回车
-4. 回到 **Plugins**，找到 `agent-critter`，选择 **Install**
-5. 输入 `/reload-plugins` 重载插件
+### 通过插件市场安装（推荐）
 
-安装后自动启动桌宠。
-
-或命令行：
-```
+```bash
+# 添加 marketplace
 /plugin marketplace add github.com/Jedeiah/agent-critter
+
+# 安装插件
 /plugin install agent-critter@agent-critter
+
+# 重载插件
 /reload-plugins
 ```
 
-### 独立运行
+或通过交互菜单安装：
+
+1. 在 Claude Code 中输入 `/plugin`
+2. 选择 **Marketplaces** → **Add Marketplace**
+3. 输入 `Jedeiah/agent-critter`
+4. 回到 **Plugins**，找到 `agent-critter`，选择 **Install**
+5. 输入 `/reload-plugins`
+
+安装后桌宠自动启动。
+
+### 从 Release 安装
+
+从 [Releases](https://github.com/Jedeiah/agent-critter/releases) 下载对应平台的插件包，解压后运行：
 
 ```bash
-# 构建并运行
-cargo run -- --daemon
+# macOS
+./bin/agent-critter --daemon
+
+# Windows
+bin\agent-critter.exe --daemon
 ```
 
-> 也可直接下载 Release 的二进制，解压后运行 `bin/agent-critter --daemon`。
+### 从源码构建
 
-## 状态映射
+```bash
+cargo build --release
 
-| AI 状态 | 宠物动画 | 行 |
-|---------|---------|----|
-| 空闲 (Idle) | 呼吸待机 | 0 |
-| 工作中 (Running) | 左右奔跑（随机切换） | 1/2 |
-| 等待确认 (NeedConfirm) | 等待 | 6 |
-| 工具异常 (ToolError) | 审查中 | 8 |
-| 严重错误 (ErrorFinal) | 失败崩溃 | 5 |
-
-## 架构
-
-```
-Claude Code Hooks → TCP(7890) → StateMachine → evaluate_script() → WebView
-     (JSON)                      (多会话)         (瞬时推JS)         (CSS动画)
+# 打包插件（可选）
+bash scripts/build-plugin.sh   # macOS / Linux
+# 或
+.\scripts\build-plugin.bat     # Windows
 ```
 
-- **Rust daemon**：状态机 + TCP 服务器 + wry/tao 透明窗口
-- **HTML/CSS/JS**：Petdex 格式精灵渲染（8×9 网格，JS 逐帧播）
-- **WebView**：wry (macOS WKWebView / Windows WebView2)，透明 + 置顶 + 可拖拽
+---
 
-## 安装宠物精灵
+## 使用说明
 
-在 [Petdex](https://petdex.crafter.run/zh/collections) 浏览 2700+ 免费精灵，选好后安装到本地。
+桌宠启动后会以透明窗口形式悬浮在屏幕最上层，实时反映 Claude Code 的工作状态。
 
-### 方式一：右键菜单直接安装（推荐，无需 Node.js）
+### 交互方式
 
-右键桌宠 → 打开菜单（分上下两部分，点击可放大）：
+| 操作 | 效果 |
+|------|------|
+| **单击宠物** | 随机互动文案 + 动作（挥手 / 跳跃 / 等待 / 审查） |
+| **双击宠物** | 显示当前会话数和状态气泡 |
+| **拖拽** | 移动桌宠位置（拖拽背景区域） |
+| **右键** | 打开功能菜单 |
+
+### 右键菜单
 
 | 切换宠物 / 市场 / 安装 | 大小 / GitHub / 退出 |
 |------------------------|---------------------|
 | ![菜单1](菜单1.png) | ![菜单2](菜单2.png) |
 
-- **📥装**：输入宠物名字后点击，自动从 Petdex API 下载并切换到该宠物
-- **🎲随机**：从 2700+ 宠物中随机选一个下载安装
-- **🌐 浏览市场找名字**：打开 Petdex 合集页面，浏览宠物图及其名字
-- 安装完成后气泡会显示 **"✅ 已安装 xxx"** 并自动切换
-- 如果已安装，气泡显示 **"✅ xxx 已存在"** 并直接切换过去
-- 输入自动转小写、空格变 `-`，支持粘贴
+右键桌宠弹出全屏菜单（分上下两部分）：
 
-> 名字支持 `slug`（如 `boba`）和 `displayName`（如 `Boba`），不区分大小写。
-
-### 方式二：命令行（有 Node.js）
-
-```bash
-npx -y petdex install boba
+```
+🐾 切换宠物
+  ├─ Boba / Dwight / ...    ← 已安装的宠物，点击切换
+  ├──────────────────────
+  🔍 大小 x1.0  [−]  [+]   ← 缩放 0.5x ~ 1.5x
+  ├──────────────────────
+  🌐 浏览市场找名字          ← 打开 Petdex 合集页面
+  📥 [输入框] 装             ← 输入名字安装新宠物
+  🎲 随机                    ← 随机安装一个宠物
+  ├──────────────────────
+  ⭐ Star on GitHub          ← 打开项目主页
+  × 退出                     ← 关闭桌宠
 ```
 
-替换 `boba` 为任意精灵名字即可。安装后右键菜单可见。
+### 安装更多宠物
 
-### 方式三：手动下载
-
-1. 打开 [petdex.crafter.run/zh/collections](https://petdex.crafter.run/zh/collections)
-2. 找到喜欢的精灵，点击下载 `spritesheet.webp`
-3. 放入以下路径：
-
-| 系统 | 路径 |
-|------|------|
-| macOS / Linux | `~/.codex/pets/<名字>/spritesheet.webp` |
-| Windows | `%USERPROFILE%\.codex\pets\<名字>\spritesheet.webp` |
-
-4. 右键菜单即可切换
-
-### 已安装的宠物在哪
-
-桌宠会扫描以下目录：
-
-| 目录 | 说明 |
-|------|------|
-| `~/.codex/pets/` | Codex CLI 宠物目录（主目录） |
-| `~/.petdex/pets/` | 旧版 Petdex 兼容目录 |
-
-每个宠物一个文件夹，里面放 `spritesheet.webp`（或 `.png`）即可。
-
-## 从源码构建
+内置宠物市场，无需 Node.js：
 
 ```bash
-# 构建
-cargo build --release
-
-# 打包插件
-bash scripts/build-plugin.sh
-# Windows: build-plugin.bat
+# 右键菜单中直接输入名字安装，或点"随机"
+# 也可用命令行（需 Node.js）：
+npx -y petdex install <宠物名字>
 ```
 
-## 数据存储
+支持 Petdex 社区 2700+ 精灵，浏览合集：[https://petdex.crafter.run/zh/collections](https://petdex.crafter.run/zh/collections)
 
-配置保存在 `~/.agent-critter/data/`：
-| 文件 | 内容 |
-|------|------|
-| `position` | 窗口位置（x, y） |
-| `pet-scale` | 缩放比例（0.5 ~ 1.5） |
+### 状态映射
 
-首次启动默认显示在屏幕右下角。
+Claude Code 的状态变化会自动切换桌宠动画：
 
-## 技术栈
+| AI 状态 | 宠物动画 | 说明 |
+|---------|---------|------|
+| 空闲 | 😴 呼吸待机 | 无活动时，30s 后概率触发闲时互动，2h 后自动休眠 |
+| 工作中 | 🏃 左右奔跑 | 处理用户请求、执行工具调用时 |
+| 等待确认 | ⏳ 等待 | 权限请求、弹窗确认时 |
+| 工具异常 | 🔍 审查中 | 工具调用失败、限流时 |
+| 严重错误 | 💥 崩溃 | 认证失败、账单错误、模型不存在时 |
+
+---
+
+## Hook 事件
+
+Claude Code 通过以下 hook 事件驱动桌宠状态：
+
+| Hook 事件 | 映射状态 | 触发时机 |
+|-----------|---------|----------|
+| `SessionStart` | session_start | 会话开始 / 压缩完成 |
+| `PerCompact` | running | 压缩真正开始 |
+| `UserPromptSubmit` | running | 用户提交 prompt |
+| `PreToolUse` | running | 工具调用前 |
+| `PostToolUse` | running | 工具调用后 |
+| `PermissionRequest` | need_confirm | 权限请求 |
+| `Notification` | idle / need_confirm | 通知消息 |
+| `Stop` | idle | 停止 |
+| `StopFailure` | tool_error / error_final | 停止失败 |
+| `PostToolUseFailure` | tool_error / stop | 工具调用失败 |
+| `SessionEnd` | session_end | 会话结束 |
+
+所有 hook 配置见 [`hooks/hooks.json`](hooks/hooks.json)。
+
+---
+
+## 架构
+
+```
+Claude Code Hooks ──TCP(7890)──▶ StateMachine ──evaluate_script()──▶ WebView
+     (JSON)                        (多会话)         (瞬时推JS)         (CSS动画)
+```
 
 | 层 | 技术 |
 |----|------|
-| 窗口 | wry + tao (macOS WKWebView / Windows WebView2) |
+| 窗口 | wry + tao（macOS WKWebView / Windows WebView2） |
 | 渲染 | CSS background-image + JS setTimeout 逐帧 |
-| 状态机 | Rust StateMachine (多会话优先级) |
-| Hook | TCP JSON (Claude Code plugin hooks) |
-| 精灵 | Petdex 8×9 spritesheet (webp) |
+| 状态机 | Rust StateMachine（多会话优先级合并） |
+| Hook | TCP JSON（Claude Code plugin hooks） |
+| 精灵 | Petdex 8×9 spritesheet（webp） |
 
-## Roadmap
+### 多会话优先级
 
-正在计划中的功能：
+多个 Claude Code 会话同时运行时，桌宠取最高优先级状态：
+
+`ErrorFinal > ToolError > NeedConfirm > Running > Idle`
+
+---
+
+## 配置
+
+所有配置持久化在 `~/.agent-critter/data/`：
+
+| 文件 | 内容 | 说明 |
+|------|------|------|
+| `position` | `x\ny` | 窗口位置（像素坐标） |
+| `pet-slug` | `boba` | 当前选中的宠物 slug |
+| `pet-scale` | `1.0` | 缩放比例（0.5 ~ 1.5） |
+
+首次启动默认显示在屏幕右下角。
+
+---
+
+## 宠物存储
+
+桌宠扫描以下目录加载已安装的宠物精灵：
+
+| 目录 | 说明 |
+|------|------|
+| `~/.codex/pets/<name>/` | 主目录（自动创建） |
+| `~/.petdex/pets/<name>/` | 旧版 Petdex 兼容目录 |
+
+每个宠物一个文件夹，内含 `spritesheet.webp`（或 `.png`）即可。
+
+---
+
+## 卸载
+
+```bash
+/plugin uninstall agent-critter
+```
+
+如需完全清理数据：
+
+```bash
+rm -rf ~/.agent-critter
+```
+
+---
+
+## 故障排除
+
+| 问题 | 解决方法 |
+|------|---------|
+| **桌宠不显示** | `pkill agent-critter` 后重启 Claude Code |
+| **端口 7890 被占用** | `pkill agent-critter` 或更换端口 |
+| **宠物图片不显示** | 检查 `~/.codex/pets/<name>/spritesheet.webp` 是否存在 |
+| **Windows 白线/边框** | 自动处理，如仍有问题请提 Issue |
+
+---
+
+## 路线图
 
 - [x] Claude Code 实时状态同步
-- [x] 🌐 **精灵市场内置** — 右键菜单搜索安装 / 随机一只，无需 Node.js
-- [ ] 适配更多 Agent — **Codex CLI** / **OpenCode** / **Gemini CLI**
-- [ ] 更多 Hook 事件处理（Subagent、Compact 等）
-- [ ] 🎙️ **宠物语音** — 状态切换时播放音效或 TTS 语音
-- [ ] 主题系统 — 自定义 UI 配色
+- [x] 精灵市场内置（搜索安装 / 随机）
+- [ ] 适配更多 Agent（Codex CLI / OpenCode / Gemini CLI）
+- [ ] 更多 Hook 事件（Subagent、Compact 等）
+- [ ] 宠物语音（状态切换音效 / TTS）
+- [ ] 主题系统（自定义 UI 配色）
+
+---
 
 ## 致谢
 
 - [Petdex](https://github.com/crafter-station/petdex) — 精灵格式、HTML 模板参考
 - [wry](https://github.com/nicehash/wry) — Rust WebView 库
+- [tao](https://github.com/tauri-apps/tao) — 跨平台窗口
 
-## License
+## 许可证
 
 [MIT](LICENSE)
