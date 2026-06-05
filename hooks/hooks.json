@@ -16,6 +16,19 @@
         ]
       }
     ],
+    "PerCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/agent-critter",
+            "args": ["--hook"],
+            "async": true,
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [

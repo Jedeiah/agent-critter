@@ -87,7 +87,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     std::thread::spawn(move || { start_server(listener, state_srv); });
 
     // Window
-    let mut window_builder = WindowBuilder::new()
+    let window_builder = WindowBuilder::new()
         .with_inner_size(tao::dpi::LogicalSize::new(140.0, 180.0))
         .with_decorations(false).with_transparent(true).with_always_on_top(true)
         .with_resizable(false);
@@ -105,13 +105,38 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 fn SetWindowLongPtrW(hwnd: isize, index: i32, new_long: isize) -> isize;
                 fn GetWindowLongPtrW(hwnd: isize, index: i32) -> isize;
                 fn SetWindowPos(hwnd: isize, after: isize, x: i32, y: i32, cx: i32, cy: i32, flags: u32) -> i32;
+                fn CallWindowProcW(prev: isize, hwnd: isize, msg: u32, wparam: usize, lparam: isize) -> isize;
             }
             let hwnd = window.hwnd();
             let style = GetWindowLongPtrW(hwnd, -16);
-            SetWindowLongPtrW(hwnd, -16, style & !((0x00800000_i32 | 0x00040000 | 0x00C00000) as isize));
+            // 去掉边框、标题栏、以及最大化/最小化/系统菜单能力
+            // ~(WS_BORDER|WS_THICKFRAME|WS_CAPTION|WS_MINIMIZEBOX|WS_MAXIMIZEBOX|WS_SYSMENU)
+            SetWindowLongPtrW(hwnd, -16, style & !((0x00800000_i32 | 0x00040000 | 0x00C00000 | 0x00020000 | 0x00010000 | 0x00080000) as isize));
             let ex_style = GetWindowLongPtrW(hwnd, -20);
-            SetWindowLongPtrW(hwnd, -20, ex_style & !((0x00000001_i32 | 0x00000200 | 0x00020000) as isize));
+            // 保留原有移除项 + 添加 WS_EX_NOACTIVATE 防止启动时抢焦点
+            SetWindowLongPtrW(hwnd, -20, (ex_style & !((0x00000001_i32 | 0x00000200 | 0x00020000) as isize)) | 0x08000000);
             SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0020 | 0x0002 | 0x0001 | 0x0004);
+
+            // Subclass WndProc：拦截 WM_SYSCOMMAND 的最大化/最小化/还原
+            // （样式位只隐藏按钮，ShowWindow/UI Automation 仍可触发，必须在消息层拦截）
+            static PREV_PROC: std::sync::atomic::AtomicIsize = std::sync::atomic::AtomicIsize::new(0);
+            extern "system" fn wnd_proc(hwnd: isize, msg: u32, wparam: usize, lparam: isize) -> isize {
+                const WM_SYSCOMMAND: u32 = 0x0112;
+                const SC_MINIMIZE: usize = 0xF020;
+                const SC_MAXIMIZE: usize = 0xF030;
+                const SC_RESTORE: usize = 0xF120;
+                if msg == WM_SYSCOMMAND {
+                    let cmd = wparam & 0xFFF0;
+                    if cmd == SC_MINIMIZE || cmd == SC_MAXIMIZE || cmd == SC_RESTORE {
+                        return 0; // 吞掉，不处理
+                    }
+                }
+                let prev = PREV_PROC.load(std::sync::atomic::Ordering::Relaxed);
+                unsafe { CallWindowProcW(prev, hwnd, msg, wparam, lparam) }
+            }
+            // GWLP_WNDPROC = -4
+            let prev = SetWindowLongPtrW(hwnd, -4, wnd_proc as *const () as isize);
+            PREV_PROC.store(prev, std::sync::atomic::Ordering::Relaxed);
         }
     }
 

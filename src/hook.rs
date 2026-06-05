@@ -34,13 +34,14 @@ pub fn map_hook_event(payload: &HookPayload) -> &'static str {
 
     match payload.hook_event_name.as_deref() {
         Some("SessionStart") => {
-            // compact/clear 场景：source="compact"，
-            // 此时Claude已在运行，应为running而非session_start
+            // compact 已完成 → 完成态 session_start
             match payload.source.as_deref() {
-                Some("compact") => "running",
+                Some("compact") => "session_start",
                 _ => "session_start",
             }
         }
+
+        Some("PerCompact") => "running",
 
         Some("UserPromptSubmit") => "running",
         Some("PreToolUse") => "running",

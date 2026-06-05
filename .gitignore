@@ -27,8 +27,9 @@ Thumbs.db
 # Logs
 *.log
 
-# Build artifacts
+# Tool artifacts
 .reasonix/
+.codegraph/
 
 # Runtime data
 data/
