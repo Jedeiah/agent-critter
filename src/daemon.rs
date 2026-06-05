@@ -301,11 +301,17 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                         let is_random = name == "__random__";
                         let proxy = proxy_ipc.clone();
                         std::thread::spawn(move || {
+                            use std::time::Duration;
                             let bubble = |text: &str| {
                                 let _ = proxy.send_event(UiCommand::ShowBubble { text: text.into(), duration_ms: 3000 });
                             };
+                            // 带超时的 HTTP agent（防止网络卡死导致无响应）
+                            let agent: ureq::Agent = ureq::Agent::config_builder()
+                                .timeout_global(Some(Duration::from_secs(30)))
+                                .build()
+                                .into();
                             // 获取 manifest
-                            let resp = match ureq::get("https://petdex.crafter.run/api/manifest").call() {
+                            let resp = match agent.get("https://petdex.crafter.run/api/manifest").call() {
                                 Ok(r) => r,
                                 Err(_) => { bubble("😿网络开小差了，检查一下网络再试试？"); return; }
                             };
@@ -352,7 +358,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                                 None => { bubble("😿这个宠物没有精灵图，换一个试试？"); return; }
                             };
                             // 下载精灵图
-                            let img_resp = match ureq::get(&spritesheet_url).call() {
+                            let img_resp = match agent.get(&spritesheet_url).call() {
                                 Ok(r) => r,
                                 Err(_) => { bubble("😿图片下载失败了，检查网络再试试？"); return; }
                             };
