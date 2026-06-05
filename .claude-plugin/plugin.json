@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "agent-critter",
   "displayName": "Agent Critter",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "一只桌宠小精灵，实时展示 Claude Code 的工作状态。支持 Petdex 社区 2700+ 精灵，透明窗口、可拖拽、可缩放。",
   "author": {
     "name": "chj",
