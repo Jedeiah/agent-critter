@@ -87,7 +87,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
     std::thread::spawn(move || { start_server(listener, state_srv); });
 
     // Window
-    let window_builder = WindowBuilder::new()
+    let mut window_builder = WindowBuilder::new()
         .with_inner_size(tao::dpi::LogicalSize::new(140.0, 180.0))
         .with_decorations(false).with_transparent(true).with_always_on_top(true)
         .with_resizable(false);
