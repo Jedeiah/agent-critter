@@ -521,6 +521,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
             Event::UserEvent(cmd) => match cmd {
                 UiCommand::SetState { state, duration_ms } => {
                     if last_state == Some(state) { return; }
+                    let prev = last_state;
                     last_state = Some(state);
                     if let Some(ref wv) = webview {
                         let sn = state_name(state);
@@ -529,6 +530,20 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                         if state != LightState::Idle {
                             let b = bubble_text(state);
                             if !b.is_empty() { let _ = wv.evaluate_script(&format!("setBubble('{}',0,true)", b)); }
+                        } else if prev == Some(LightState::Running) {
+                            // 从工作切回空闲：展示完成气泡
+                            let done_bubbles = [
+                                "🎉 任务完成！休息一下~",
+                                "✅ 搞定！主人快夸我~",
+                                "（瘫倒）终于写完了...",
+                                "🐾 收工！可以摸摸我了~",
+                                "✨ 轻松搞定！我是不是很厉害~",
+                            ];
+                            let idx = std::time::SystemTime::now()
+                                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                                .map(|d| d.as_secs() as usize % done_bubbles.len())
+                                .unwrap_or(0);
+                            let _ = wv.evaluate_script(&format!("setBubble('{}',3000,false)", done_bubbles[idx]));
                         } else {
                             let _ = wv.evaluate_script("setBubble('',0,false)");
                         }
