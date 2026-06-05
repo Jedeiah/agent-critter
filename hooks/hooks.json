@@ -16,7 +16,7 @@
         ]
       }
     ],
-    "PerCompact": [
+    "PreCompact": [
       {
         "hooks": [
           {

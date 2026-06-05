@@ -41,7 +41,7 @@ pub fn map_hook_event(payload: &HookPayload) -> &'static str {
             }
         }
 
-        Some("PerCompact") => "running",
+        Some("PreCompact") => "running",
 
         Some("UserPromptSubmit") => "running",
         Some("PreToolUse") => "running",
