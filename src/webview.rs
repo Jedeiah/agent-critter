@@ -197,6 +197,11 @@ window.addEventListener('mouseup', function() {{
   if (!dragging) return;
   dragging = false;
   window.ipc.postMessage(JSON.stringify({{type:'savePos'}}));
+  if (wasDrag) {{
+    // 拖拽释放反馈
+    window.showTransientBubble('哎呀，轻点拽~ 😵', 2000);
+    window.setState('waving', 2000);
+  }}
 }});
 
 // --- Right-click pet menu ---
@@ -341,9 +346,10 @@ pet.addEventListener('contextmenu', function(e) {{
   menu.onmouseleave = function() {{ window.__menuTimer = setTimeout(function() {{ menu.style.display = 'none'; document.body.style.pointerEvents = 'none'; }}, 1500); }};
 }});
 
-// --- Single-click: random interaction ---
-var clicks = [
-  '戳我干嘛~','喵！','别闹，正忙着呢','嘿嘿，痒~','有什么事吗主人？',
+// --- Single-click: position-based interaction ---
+var headTexts = ['嘿嘿，痒~', '摸头会长不高哦！', '（眯眼）舒服~', '再摸要收费了！', '（蹭蹭手）'];
+var bodyTexts = [
+  '戳我干嘛~','喵！','别闹，正忙着呢','有什么事吗主人？',
   '（打滚）','哼，不理你','再戳就咬你哦','嗯？叫我吗？',
   '（伸懒腰）今天天气不错~','（翻肚皮）摸摸~','盯——',
   '干嘛啦','再戳我要生气了','（蹭蹭）','呼噜呼噜...',
@@ -355,8 +361,16 @@ pet.addEventListener('click', function(e) {{
   if (window.__realState && window.__realState !== 'idle') return;
   if (window.__clickBusy) return;
   window.__clickBusy = true;
-  var t = clicks[Math.floor(Math.random() * clicks.length)];
-  var a = clickActions[Math.floor(Math.random() * clickActions.length)];
+  var rect = pet.getBoundingClientRect();
+  var y = (e.clientY - rect.top) / rect.height;
+  var t, a;
+  if (y < 0.3) {{
+    t = headTexts[Math.floor(Math.random() * headTexts.length)];
+    a = 'waving';
+  }} else {{
+    t = bodyTexts[Math.floor(Math.random() * bodyTexts.length)];
+    a = clickActions[Math.floor(Math.random() * clickActions.length)];
+  }}
   window.showTransientBubble(t, 3000);
   window.setState(a, 2000);
   setTimeout(function() {{ window.__clickBusy = false; }}, 2500);
