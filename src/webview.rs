@@ -138,17 +138,41 @@ function positionBubble() {{
   var bh = bubbleEl.offsetHeight || 22;
   bubbleEl.style.top = Math.max(2, rect.top - bh - 10)+'px';
 }}
+window.__persistentBubble = '';
 window.setBubble = function(text, durationMs, persist) {{
   var el = ensureBubble();
   bubbleTextEl.textContent = text || '';
   clearTimeout(window.__bubbleTimer);
+  if (persist) {{
+    window.__persistentBubble = text || '';
+  }}
   if (text) {{
     el.style.opacity = '1';
     positionBubble();
-    if (!persist && durationMs) window.__bubbleTimer = setTimeout(function() {{ el.style.opacity = '0'; }}, durationMs);
+    if (!persist && durationMs) {{
+      window.__persistentBubble = '';  // Rust transient: 不恢复旧气泡
+      window.__bubbleTimer = setTimeout(function() {{ el.style.opacity = '0'; }}, durationMs);
+    }}
   }} else {{
+    window.__persistentBubble = '';
     el.style.opacity = '0';
   }}
+}};
+// 用户交互触发的瞬态气泡：自动恢复底层的持久气泡
+window.showTransientBubble = function(text, durationMs) {{
+  var saved = window.__persistentBubble || '';
+  var el = ensureBubble();
+  bubbleTextEl.textContent = text;
+  clearTimeout(window.__bubbleTimer);
+  el.style.opacity = '1';
+  positionBubble();
+  window.__bubbleTimer = setTimeout(function() {{
+    if (saved) {{
+      bubbleTextEl.textContent = saved;
+    }} else {{
+      el.style.opacity = '0';
+    }}
+  }}, durationMs);
 }};
 
 // --- Drag: mousedown anywhere on window → move window ---
@@ -333,7 +357,7 @@ pet.addEventListener('click', function(e) {{
   window.__clickBusy = true;
   var t = clicks[Math.floor(Math.random() * clicks.length)];
   var a = clickActions[Math.floor(Math.random() * clickActions.length)];
-  window.setBubble(t, 3000);
+  window.showTransientBubble(t, 3000);
   window.setState(a, 2000);
   setTimeout(function() {{ window.__clickBusy = false; }}, 2500);
 }});
@@ -358,7 +382,7 @@ pet.addEventListener('dblclick', function(e) {{
   }} else {{
     msg = '会话: ' + count + ' | 状态: ' + (window.__stateLabel||'idle');
   }}
-  window.setBubble(msg, 3000);
+  window.showTransientBubble(msg, 3000);
 }});
 
 
