@@ -210,7 +210,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         })
         .with_url("pet://localhost/")
         .with_ipc_handler(move |msg| {
-            if msg.body() == "quit" { std::process::exit(0); }
+            if msg.body() == "quit" { mark_manual_quit(); std::process::exit(0); }
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(msg.body()) {
                 if let Some(slug) = v.get("theme").and_then(|t| t.as_str()) {
                     let _ = proxy_ipc.send_event(UiCommand::SwitchPet { slug: slug.into() });
@@ -657,12 +657,27 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
 }
 
 pub fn start_detached_daemon(_port: u16) -> bool {
+    if is_manual_quit() { return false; }
     let mut cmd = std::process::Command::new(std::env::current_exe().unwrap_or_default());
     cmd.arg("--daemon").stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
     #[cfg(windows)] { use std::os::windows::process::CommandExt; cmd.creation_flags(0x0000_0200 | 0x0000_0008); }
     cmd.spawn().is_ok()
 }
 pub fn fixed_port() -> u16 { FIXED_PORT }
+
+pub fn is_manual_quit() -> bool {
+    data_dir().join(".manual-quit").exists()
+}
+
+pub fn clear_manual_quit() {
+    let _ = std::fs::remove_file(data_dir().join(".manual-quit"));
+}
+
+fn mark_manual_quit() {
+    let dir = data_dir();
+    let _ = std::fs::create_dir_all(&dir);
+    let _ = std::fs::write(dir.join(".manual-quit"), "");
+}
 
 fn save_pet_slug(slug: &str) {
     let dir = data_dir();

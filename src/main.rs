@@ -3,7 +3,7 @@ use std::io::{self, Read};
 use std::time::Duration;
 use agent_critter::client::{send_event_str, send_raw_json};
 
-use agent_critter::daemon::{run_daemon, start_detached_daemon, fixed_port};
+use agent_critter::daemon::{run_daemon, start_detached_daemon, fixed_port, is_manual_quit, clear_manual_quit};
 
 fn read_stdin_and_send(port: u16) {
     let mut stdin_bytes = Vec::new();
@@ -12,6 +12,19 @@ fn read_stdin_and_send(port: u16) {
     }
     if stdin_bytes.is_empty() || stdin_bytes.iter().all(|&b| b.is_ascii_whitespace()) {
         return;
+    }
+
+    // 用户手动退出后，只有新会话开始才允许重新启动
+    if is_manual_quit() {
+        if let Ok(v) = serde_json::from_slice::<serde_json::Value>(&stdin_bytes) {
+            if v.get("hook_event_name").and_then(|n| n.as_str()) == Some("SessionStart") {
+                clear_manual_quit(); // 新会话：允许重启
+            } else {
+                return; // 其他 hook 不重启
+            }
+        } else {
+            return;
+        }
     }
 
     // Try sending; if daemon not running, start it and poll up to ~2s
