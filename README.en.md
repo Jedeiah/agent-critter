@@ -2,12 +2,14 @@
 
 [![Rust](https://img.shields.io/badge/rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Petdex](https://img.shields.io/badge/pets-2700%2B-ff69b4.svg)](https://petdex.crafter.run)
+[![Petdex](https://img.shields.io/badge/pets-2700%2B-ff69b4.svg)](https://petdex.dev)
 [![Plugin Hub](https://img.shields.io/badge/plugin-available-8A2BE2.svg)](https://www.claudepluginhub.com/plugins/jedeiah-agent-critter)
+
+> **English · [中文](README.md) 🌏**
 
 > **Cross-platform:** Tested on macOS and Windows 11.
 
-**Agent Critter** is a Claude Code desktop pet plugin — a cute critter that reflects your AI coding assistant's working status in real time. Supports 2700+ pets from the [Petdex](https://petdex.crafter.run) community with one-click switching. Transparent window, draggable, resizable.
+**Agent Critter** is a Claude Code desktop pet plugin — a cute critter that reflects your AI coding assistant's working status in real time. Supports 2700+ pets from the [Petdex](https://petdex.dev) community with one-click switching. Transparent window, draggable, resizable.
 
 ---
 
@@ -119,7 +121,7 @@ Built-in pet market — no Node.js required:
 npx -y petdex install <pet-name>
 ```
 
-Browse 2700+ pets from the Petdex community: [https://petdex.crafter.run/en/collections](https://petdex.crafter.run/en/collections)
+Browse 2700+ pets from the Petdex community: [https://petdex.dev/collections](https://petdex.dev/collections)
 
 ### State Mapping
 

@@ -224,7 +224,7 @@ pet.addEventListener('contextmenu', function(e) {{
   market.style.cssText = 'padding:5px 8px;border-radius:4px;color:#58a6ff;cursor:pointer;font-size:10px;text-align:center';
   market.addEventListener('mouseenter', function() {{ market.style.background = 'rgba(88,166,255,0.1)'; }});
   market.addEventListener('mouseleave', function() {{ market.style.background = ''; }});
-  market.addEventListener('click', function() {{ window.ipc.postMessage(JSON.stringify({{url:'https://petdex.crafter.run/zh/collections'}})); menu.style.display = 'none'; }});
+  market.addEventListener('click', function() {{ window.ipc.postMessage(JSON.stringify({{url:'https://petdex.dev/collections'}})); menu.style.display = 'none'; }});
   menu.appendChild(market);
   // 输入框（占一行）
   var installInput = document.createElement('input');

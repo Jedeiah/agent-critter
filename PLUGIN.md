@@ -80,15 +80,15 @@ npx -y petdex install <名字>
 
 ## 关于 Petdex
 
-Agent Critter 完全兼容 [Petdex](https://petdex.crafter.run) 社区生态：
+Agent Critter 完全兼容 [Petdex](https://petdex.dev) 社区生态：
 
 - **2700+ 精灵** — 免费开源，一键安装
-- **社区创作** — 用户可上传图片生成自定义精灵（[Submit](https://petdex.crafter.run)）
+- **社区创作** — 用户可上传图片生成自定义精灵（[Submit](https://petdex.dev)）
 - **精灵格式** — 单张 8 列 × 9 行 spritesheet（webp），每行一个动作
 
 ```bash
 # 浏览精灵库
-open https://petdex.crafter.run
+open https://petdex.dev
 
 # 安装任意精灵
 npx petdex install <名字>

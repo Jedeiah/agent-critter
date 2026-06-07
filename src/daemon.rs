@@ -214,7 +214,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     let _ = proxy_ipc.send_event(UiCommand::SwitchPet { slug: slug.into() });
                 }
                 if let Some(url) = v.get("url").and_then(|u| u.as_str()) {
-                    if url == "https://github.com/Jedeiah/agent-critter" || url.starts_with("https://petdex.crafter.run") {
+                    if url == "https://github.com/Jedeiah/agent-critter" || url.starts_with("https://petdex.dev") {
                         #[cfg(target_os = "macos")]
                         { let _ = std::process::Command::new("open").arg(url).spawn(); }
                         #[cfg(target_os = "windows")]
@@ -311,7 +311,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                                 .build()
                                 .into();
                             // 获取 manifest
-                            let resp = match agent.get("https://petdex.crafter.run/api/manifest").call() {
+                            let resp = match agent.get("https://petdex.dev/api/manifest").call() {
                                 Ok(r) => r,
                                 Err(e) => { eprintln!("[agent-critter] manifest API 请求失败: {e:?}"); bubble("😿网络开小差了，检查一下网络再试试？"); return; }
                             };

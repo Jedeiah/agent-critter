@@ -2,12 +2,14 @@
 
 [![Rust](https://img.shields.io/badge/rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Petdex](https://img.shields.io/badge/pets-2700%2B-ff69b4.svg)](https://petdex.crafter.run)
+[![Petdex](https://img.shields.io/badge/pets-2700%2B-ff69b4.svg)](https://petdex.dev)
 [![Plugin Hub](https://img.shields.io/badge/plugin-available-8A2BE2.svg)](https://www.claudepluginhub.com/plugins/jedeiah-agent-critter)
+
+> **🌏 [English](README.en.md) · 中文**
 
 > **跨平台支持：** macOS 和 Windows 11 已测试。
 
-**Agent Critter** 是一个 Claude Code 桌宠插件 —— 一只实时展示你的 AI 编程助手工作状态的小精灵。支持 [Petdex](https://petdex.crafter.run) 社区 2700+ 精灵，一键切换。透明窗口、可拖拽、可缩放。
+**Agent Critter** 是一个 Claude Code 桌宠插件 —— 一只实时展示你的 AI 编程助手工作状态的小精灵。支持 [Petdex](https://petdex.dev) 社区 2700+ 精灵，一键切换。透明窗口、可拖拽、可缩放。
 
 ---
 
@@ -119,7 +121,7 @@ bash scripts/build-plugin.sh   # macOS / Linux
 npx -y petdex install <宠物名字>
 ```
 
-支持 Petdex 社区 2700+ 精灵，浏览合集：[https://petdex.crafter.run/zh/collections](https://petdex.crafter.run/zh/collections)
+支持 Petdex 社区 2700+ 精灵，浏览合集：[https://petdex.dev/collections](https://petdex.dev/collections)
 
 ### 状态映射
 
