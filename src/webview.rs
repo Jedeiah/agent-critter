@@ -369,16 +369,16 @@ pet.addEventListener('dblclick', function(e) {{
   var msg;
   if (state === 'idle' || state === 'session_start' || state === 'session_end') {{
     if (count === 0) msg = '没人找我，好无聊啊...😴';
-    else if (count === 1) msg = '有 1 个会话，随时待命~ ✨';
-    else msg = '有 ' + count + ' 个会话待命中 ✨';
+    else if (count === 1) msg = '1 个会话待命中 ✨';
+    else msg = count + ' 个会话待命中 ✨';
   }} else if (state.indexOf('running') !== -1) {{
-    msg = '正在处理 ' + count + ' 个会话，忙得飞起 🏃';
+    msg = '工作中 · 共 ' + count + ' 个会话 🏃';
   }} else if (state === 'waiting') {{
-    msg = '有 ' + count + ' 个会话，其中 1 个等你确认呢 ⏳';
+    msg = '待确认 · 共 ' + count + ' 个会话 ⏳';
   }} else if (state === 'review') {{
-    msg = '有 ' + count + ' 个会话，其中 1 个出了点小状况 😅';
+    msg = '有异常 · 共 ' + count + ' 个会话 😅';
   }} else if (state === 'failed') {{
-    msg = '有 ' + count + ' 个会话，当前有个出大事了 😱';
+    msg = '出错了 · 共 ' + count + ' 个会话 😱';
   }} else {{
     msg = '会话: ' + count + ' | 状态: ' + (window.__stateLabel||'idle');
   }}
