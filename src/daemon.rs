@@ -544,7 +544,8 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                             let b = bubble_text(state);
                             if !b.is_empty() { let _ = wv.evaluate_script(&format!("setBubble('{}',0,true)", b)); }
                         } else if prev == Some(LightState::Running) {
-                            // 从工作切回空闲：展示完成气泡
+                            // 从工作切回空闲：先清空持久气泡，再展示完成气泡
+                            let _ = wv.evaluate_script("setBubble('',0,false)");
                             let done_bubbles = [
                                 "🎉 任务完成！休息一下~",
                                 "✅ 搞定！主人快夸我~",
@@ -592,7 +593,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                 UiCommand::IdleAction { action_state, bubble } => {
                     if let Some(ref wv) = webview {
                         let _ = wv.evaluate_script(&format!("setState('{}',5000)", action_state));
-                        let _ = wv.evaluate_script(&format!("setBubble('{}',4000)", bubble));
+                        let _ = wv.evaluate_script(&format!("setBubble('{}',4000,false)", bubble));
                     }
                 }
                 UiCommand::SessionCount(n) => {

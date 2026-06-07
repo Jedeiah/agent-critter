@@ -150,8 +150,15 @@ window.setBubble = function(text, durationMs, persist) {{
     el.style.opacity = '1';
     positionBubble();
     if (!persist && durationMs) {{
-      window.__persistentBubble = '';  // Rust transient: 不恢复旧气泡
-      window.__bubbleTimer = setTimeout(function() {{ el.style.opacity = '0'; }}, durationMs);
+      var saved = window.__persistentBubble;
+      window.__bubbleTimer = setTimeout(function() {{
+        if (saved) {{
+          bubbleTextEl.textContent = saved;
+          el.style.opacity = '1';
+        }} else {{
+          el.style.opacity = '0';
+        }}
+      }}, durationMs);
     }}
   }} else {{
     window.__persistentBubble = '';
