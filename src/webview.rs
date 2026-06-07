@@ -340,8 +340,23 @@ pet.addEventListener('click', function(e) {{
 
 // --- Double-click shows status (only when idle) ---
 pet.addEventListener('dblclick', function(e) {{
-  if (window.__realState && window.__realState !== 'idle') return;
-  window.setBubble('会话: ' + (window.__sessions||0) + ' | 状态: ' + (window.__stateLabel||'idle'), 3000);
+  var state = window.__realState || 'idle';
+  var count = window.__sessions || 0;
+  var msg;
+  if (state === 'idle' || state === 'session_start' || state === 'session_end') {{
+    msg = '会话: ' + count + ' | 状态: ' + (window.__stateLabel||'空闲');
+  }} else if (state.indexOf('running') !== -1) {{
+    msg = '正在处理 ' + count + ' 个会话，忙得飞起 🏃';
+  }} else if (state === 'waiting') {{
+    msg = '有 ' + count + ' 个任务在等你确认呢 ⏳';
+  }} else if (state === 'review') {{
+    msg = '刚才出了点小状况 😅';
+  }} else if (state === 'failed') {{
+    msg = '求救！出大事了 😱';
+  }} else {{
+    msg = '会话: ' + count + ' | 状态: ' + (window.__stateLabel||'idle');
+  }}
+  window.setBubble(msg, 3000);
 }});
 
 
