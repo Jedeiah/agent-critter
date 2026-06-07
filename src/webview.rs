@@ -198,9 +198,10 @@ window.addEventListener('mouseup', function() {{
   dragging = false;
   window.ipc.postMessage(JSON.stringify({{type:'savePos'}}));
   if (wasDrag) {{
-    // 拖拽释放反馈
     window.showTransientBubble('哎呀，轻点拽~ 😵', 2000);
-    window.setState('waving', 2000);
+    if (!window.__realState || window.__realState === 'idle') {{
+      window.setState('waving', 2000);
+    }}
   }}
 }});
 
