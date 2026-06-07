@@ -55,6 +55,8 @@ pub enum UiCommand {
     SessionCount(u32),
     ShowBubble { text: String, duration_ms: u64 },
     RefreshPets,
+    Greeting,
+    Goodbye,
     Quit,
 }
 
@@ -434,6 +436,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         let mut idle_since: Option<std::time::Instant> = None;
         let mut last_action: Option<std::time::Instant> = None;
         let mut last_running_switch = std::time::Instant::now();
+        let mut prev_count = 0u32;
         let bubbles = [
             "好无聊呀...","主人还在吗？","想和主人玩~","发呆中...",
             "（打哈欠）困了...","咦，有虫子飞过","（转圈圈）",
@@ -451,6 +454,16 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
             let count = state_poll.lock().unwrap_or_else(|e| e.into_inner()).session_count();
             let _ = proxy_poll.send_event(UiCommand::SetState { state: cur, duration_ms: None });
             let _ = proxy_poll.send_event(UiCommand::SessionCount(count));
+
+            // 检测会话数变化：打招呼 / 告别
+            if count > 0 && prev_count == 0 && cur == LightState::Idle {
+                let _ = proxy_poll.send_event(UiCommand::Greeting);
+            } else if count > prev_count && prev_count > 0 && cur == LightState::Idle {
+                let _ = proxy_poll.send_event(UiCommand::Greeting);
+            } else if count == 0 && prev_count > 0 && !matches!(cur, LightState::ErrorFinal) {
+                let _ = proxy_poll.send_event(UiCommand::Goodbye);
+            }
+            prev_count = count;
 
             if cur == LightState::Running && last_running_switch.elapsed().as_secs() >= 4 {
                 last_running_switch = std::time::Instant::now();
@@ -512,7 +525,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         };
         if should_exit && count == 0 {
             if exit_at.is_none() { exit_at = Some(std::time::Instant::now()); }
-            if exit_at.unwrap().elapsed() >= std::time::Duration::from_secs(2) {
+            if exit_at.unwrap().elapsed() >= std::time::Duration::from_secs(4) {
                 *control_flow = ControlFlow::Exit; return;
             }
         } else { exit_at = None; }
@@ -596,6 +609,38 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                     let pj = serde_json::to_string(&list_pets()).unwrap_or_default();
                     if let Some(ref wv) = webview {
                         let _ = wv.evaluate_script(&format!("window.__PETS={}", pj));
+                    }
+                }
+                UiCommand::Greeting => {
+                    let texts = [
+                        "主人来了！今天也要加油哦~💪",
+                        "我来啦！今天写什么代码？🤔",
+                        "伸个懒腰~ 开干！",
+                        "（揉揉眼睛）主人你来了呀~",
+                        "又有新任务了，冲冲冲！🚀",
+                        "（竖起耳朵）有新活？我准备好了！",
+                    ];
+                    let idx = std::time::SystemTime::now()
+                        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                        .map(|d| d.as_secs() as usize % texts.len())
+                        .unwrap_or(0);
+                    if let Some(ref wv) = webview {
+                        let _ = wv.evaluate_script(&format!("setBubble('{}',3000,false)", texts[idx]));
+                    }
+                }
+                UiCommand::Goodbye => {
+                    let texts = [
+                        "收工！今天辛苦啦~ 🎉",
+                        "拜拜，明天见！👋",
+                        "又帮主人搞定一个任务，开森~",
+                        "（打哈欠）那我先睡啦~",
+                    ];
+                    let idx = std::time::SystemTime::now()
+                        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                        .map(|d| d.as_secs() as usize % texts.len())
+                        .unwrap_or(0);
+                    if let Some(ref wv) = webview {
+                        let _ = wv.evaluate_script(&format!("setBubble('{}',4000,false)", texts[idx]));
                     }
                 }
                 UiCommand::Quit => *control_flow = ControlFlow::Exit,
