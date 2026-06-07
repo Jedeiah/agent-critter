@@ -205,7 +205,8 @@ window.addEventListener('mouseup', function() {{
   dragging = false;
   window.ipc.postMessage(JSON.stringify({{type:'savePos'}}));
   if (wasDrag) {{
-    window.showTransientBubble('哎呀，轻点拽~ 😵', 2000);
+    var dragMsg = (!window.__realState || window.__realState === 'idle') ? '哎呀，轻点拽~ 😵' : '别打扰我干活！';
+    window.showTransientBubble(dragMsg, 2000);
     if (!window.__realState || window.__realState === 'idle') {{
       window.setState('waving', 2000);
     }}
@@ -381,7 +382,7 @@ pet.addEventListener('click', function(e) {{
   }}
   window.showTransientBubble(t, 3000);
   window.setState(a, 2000);
-  setTimeout(function() {{ window.__clickBusy = false; }}, 2500);
+  setTimeout(function() {{ window.__clickBusy = false; }}, 2000);
 }});
 
 // --- Double-click shows status with session count ---
@@ -389,7 +390,7 @@ pet.addEventListener('dblclick', function(e) {{
   var state = window.__realState || 'idle';
   var count = window.__sessions || 0;
   var msg;
-  if (state === 'idle' || state === 'session_start' || state === 'session_end') {{
+  if (state === 'idle') {{
     if (count === 0) msg = '没人找我，好无聊啊...😴';
     else if (count === 1) msg = '1 个会话待命中 ✨';
     else msg = count + ' 个会话待命中 ✨';

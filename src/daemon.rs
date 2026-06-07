@@ -450,8 +450,10 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         loop {
             std::thread::sleep(std::time::Duration::from_secs(1));
             tick += 1;
-            let cur = state_poll.lock().unwrap_or_else(|e| e.into_inner()).current_state();
-            let count = state_poll.lock().unwrap_or_else(|e| e.into_inner()).session_count();
+            let (cur, count) = {
+                let s = state_poll.lock().unwrap_or_else(|e| e.into_inner());
+                (s.current_state(), s.session_count())
+            };
             let _ = proxy_poll.send_event(UiCommand::SetState { state: cur, duration_ms: None });
             let _ = proxy_poll.send_event(UiCommand::SessionCount(count));
 
@@ -525,7 +527,7 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
         };
         if should_exit && count == 0 {
             if exit_at.is_none() { exit_at = Some(std::time::Instant::now()); }
-            if exit_at.unwrap().elapsed() >= std::time::Duration::from_secs(4) {
+            if exit_at.unwrap().elapsed() >= std::time::Duration::from_secs(2) {
                 *control_flow = ControlFlow::Exit; return;
             }
         } else { exit_at = None; }
