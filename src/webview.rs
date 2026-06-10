@@ -8,7 +8,7 @@ pub fn build_page(current_slug: &str, pets_json: &str, saved_scale: f64) -> Stri
 <meta charset="utf-8">
 <style>
   html, body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; width: 100%; height: 100%; font-family: -apple-system, system-ui, sans-serif; }}
-  body {{ -webkit-user-select: none; user-select: none; }}
+  body input {{ -webkit-user-select: auto; user-select: auto; }}
   * {{ cursor: default !important; }}
   .stage {{ position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }}
   .pet {{

@@ -251,6 +251,14 @@ pub fn run_daemon(port: u16) -> Result<(), String> {
                             }
                         }
                     }
+                    #[cfg(target_os = "windows")]
+                    if let Ok(w) = drag_win.lock() {
+                        use tao::platform::windows::WindowExtWindows;
+                        extern "system" {
+                            fn SetForegroundWindow(hwnd: isize) -> i32;
+                        }
+                        unsafe { SetForegroundWindow(w.hwnd() as isize); }
+                    }
                 }
                 if v.get("type").and_then(|t| t.as_str()) == Some("saveScale") {
                     if let Some(s) = v.get("scale").and_then(|s| s.as_f64()) {
